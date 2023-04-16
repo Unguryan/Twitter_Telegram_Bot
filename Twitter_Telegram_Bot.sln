@@ -1,0 +1,70 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32929.385
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UI", "UI\UI.csproj", "{DB23B943-22CF-433C-9AE4-A19F53821F9A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "01_Domain", "01_Domain", "{22F1DD45-9AC5-4E3F-9694-7F4E1C3B3F06}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "02_App", "02_App", "{0ACFFCB9-440F-4F06-BC20-5EBEB3125041}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03_Infrastructure", "03_Infrastructure", "{53BB3402-06DC-47BF-BB13-98098D853900}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twitter_Telegram.Domain", "Twitter_Telegram.Domain\Twitter_Telegram.Domain.csproj", "{ECEEF1B3-8CC1-46C2-BD7F-D0668498BC14}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twitter_Telegram.App", "Twitter_Telegram.App\Twitter_Telegram.App.csproj", "{BD3B43C7-AC94-4541-BC1B-C67C56C137C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twitter_Telegram.Infrastructure", "Twitter_Telegram.Infrastructure\Twitter_Telegram.Infrastructure.csproj", "{5FF32BAD-DEFB-4DEF-9F84-9DFD5F693115}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twitter_Telegram.EF_Core", "Twitter_Telegram.EF_Core\Twitter_Telegram.EF_Core.csproj", "{2CCF280F-B3EF-492B-B648-5BA9612F8159}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "04_Integration", "04_Integration", "{8F55F487-08DA-4ACD-AFEA-D008E07A3C71}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twitter_Telegram.Telegram", "Twitter_Telegram.Telegram\Twitter_Telegram.Telegram.csproj", "{641C6B3E-F983-43A7-8576-54BDBE19235D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DB23B943-22CF-433C-9AE4-A19F53821F9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB23B943-22CF-433C-9AE4-A19F53821F9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB23B943-22CF-433C-9AE4-A19F53821F9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB23B943-22CF-433C-9AE4-A19F53821F9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECEEF1B3-8CC1-46C2-BD7F-D0668498BC14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECEEF1B3-8CC1-46C2-BD7F-D0668498BC14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECEEF1B3-8CC1-46C2-BD7F-D0668498BC14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECEEF1B3-8CC1-46C2-BD7F-D0668498BC14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD3B43C7-AC94-4541-BC1B-C67C56C137C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD3B43C7-AC94-4541-BC1B-C67C56C137C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD3B43C7-AC94-4541-BC1B-C67C56C137C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD3B43C7-AC94-4541-BC1B-C67C56C137C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FF32BAD-DEFB-4DEF-9F84-9DFD5F693115}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FF32BAD-DEFB-4DEF-9F84-9DFD5F693115}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FF32BAD-DEFB-4DEF-9F84-9DFD5F693115}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FF32BAD-DEFB-4DEF-9F84-9DFD5F693115}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CCF280F-B3EF-492B-B648-5BA9612F8159}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CCF280F-B3EF-492B-B648-5BA9612F8159}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CCF280F-B3EF-492B-B648-5BA9612F8159}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CCF280F-B3EF-492B-B648-5BA9612F8159}.Release|Any CPU.Build.0 = Release|Any CPU
+		{641C6B3E-F983-43A7-8576-54BDBE19235D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{641C6B3E-F983-43A7-8576-54BDBE19235D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{641C6B3E-F983-43A7-8576-54BDBE19235D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{641C6B3E-F983-43A7-8576-54BDBE19235D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{ECEEF1B3-8CC1-46C2-BD7F-D0668498BC14} = {22F1DD45-9AC5-4E3F-9694-7F4E1C3B3F06}
+		{BD3B43C7-AC94-4541-BC1B-C67C56C137C2} = {0ACFFCB9-440F-4F06-BC20-5EBEB3125041}
+		{5FF32BAD-DEFB-4DEF-9F84-9DFD5F693115} = {53BB3402-06DC-47BF-BB13-98098D853900}
+		{2CCF280F-B3EF-492B-B648-5BA9612F8159} = {53BB3402-06DC-47BF-BB13-98098D853900}
+		{641C6B3E-F983-43A7-8576-54BDBE19235D} = {8F55F487-08DA-4ACD-AFEA-D008E07A3C71}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {70A2C79C-1D82-40DE-BB46-22F064B8AC01}
+	EndGlobalSection
+EndGlobal
