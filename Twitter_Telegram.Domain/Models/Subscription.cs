@@ -4,7 +4,7 @@
     {
         public string Username { get; set; }
 
-        public List<ulong> Friends { get; set; }
+        public List<long> Friends { get; set; }
 
     }
 }
