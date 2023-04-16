@@ -1,14 +1,21 @@
 ﻿// See https://aka.ms/new-console-template for more information
-//using Core.Services;
 
-//var reader = new ApiReader();
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Twitter_Telegram.Infrastructure;
 
-//for (int i = 0; i < 30; i++)
-//{
-//    var resp = await reader.GetUserDataAsync("AlexUnhurian");
-//    Thread.Sleep(500);
-//    Console.WriteLine(i + 1);
-//    Console.WriteLine(resp);
-//    Console.WriteLine();
-//}
+var builder = Host.CreateDefaultBuilder(args);
 
+IConfiguration config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .AddEnvironmentVariables()
+    .Build();
+
+builder.ConfigureServices(services =>
+{
+    services.AddInfrastructure(config);
+});
+
+var host = builder.Build();
+
+await host.RunAsync();

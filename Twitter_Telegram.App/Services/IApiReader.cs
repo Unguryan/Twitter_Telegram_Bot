@@ -1,13 +1,15 @@
 ﻿using Twitter_Telegram.Domain.Models;
 
-namespace Core.Services.Interfaces
+namespace Twitter_Telegram.App.Services
 {
     public interface IApiReader
     {
-        Task<string> GetUserDataAsync(string username);
+        Task<List<long>?> GetUserFriendsByUsernameAsync(string username);
 
-        Task<List<int>> GetUserFriendIdsAsync(string username);
+        Task<List<long>?> GetUserFriendIdsByUsernameAsync(string username);
 
-        Task<TwitterUser> GetUserInfoAsync(string UserId);
+        Task<TwitterUser?> GetUserInfoByUserIdAsync(string userId);
+
+        Task<TwitterUser?> GetUserInfoByUsernameAsync(string username);
     }
 }

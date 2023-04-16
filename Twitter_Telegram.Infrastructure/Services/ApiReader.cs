@@ -1,92 +1,118 @@
-﻿using Core.Services.Interfaces;
-using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Net.Http.Headers;
-using System.Text.Json.Serialization;
+using Twitter_Telegram.App.Services;
+using Twitter_Telegram.Domain.Config;
+using Twitter_Telegram.Domain.Models;
 
-namespace Core.Services
+namespace Twitter_Telegram.Infrastructure.Services
 {
     public class ApiReader : IApiReader
     {
-        public async Task<string> GetUserDataAsync(string username)
+        private readonly TwitterOptions _options;
+
+        public ApiReader(IOptions<TwitterOptions> options)
+        {
+            _options = options.Value;
+        }
+
+        public async Task<List<long>?> GetUserFriendIdsByUsernameAsync(string username)
+        {
+            var url = string.Format(TwitterHelper.UserFriendIdsByUsernameUrl, username);
+            var respStr = await SendRequestAsync(url);
+
+            if (string.IsNullOrEmpty(respStr))
+            {
+                return null;
+            }
+            return ParseUserFriendIds(respStr);
+        }
+
+        public async Task<List<long>?> GetUserFriendsByUsernameAsync(string username)
+        {
+            var url = string.Format(TwitterHelper.UserIFriendsByUsernameUrl, username);
+            var respStr = await SendRequestAsync(url);
+
+            if (string.IsNullOrEmpty(respStr))
+            {
+                return null;
+            }
+            return ParseUserFriends(respStr);
+        }
+
+        public async Task<TwitterUser?> GetUserInfoByUserIdAsync(string userId)
+        {
+            var url = string.Format(TwitterHelper.UserInfoByIdUrl, userId);
+            var respStr = await SendRequestAsync(url);
+
+            if (string.IsNullOrEmpty(respStr))
+            {
+                return null;
+            }
+            return ParseUserData(respStr);
+        }
+
+        public async Task<TwitterUser?> GetUserInfoByUsernameAsync(string username)
+        {
+            var url = string.Format(TwitterHelper.UserInfoByUsernameUrl, username);
+            var respStr = await SendRequestAsync(url);
+
+            if (string.IsNullOrEmpty(respStr))
+            {
+                return null;
+            }
+            return ParseUserData(respStr);
+        }
+
+        private async Task<string?> SendRequestAsync(string url)
         {
             using (var client = new HttpClient())
             {
-                //var token = await GetTokenAsync();
-
-
-
-                //var url = $"https://api.twitter.com/2/users/by/username/{username}";
-                //var url = $"https://api.twitter.com/2/users/by?usernames={username}&user.fields=created_at,description";
-
-                //var url = $"https://api.twitter.com/1.1/followers/list.json?cursor=-1&screen_name={username}&skip_status=true&include_user_entities=false";
-
-                //gets user data
-                //var url = $"https://api.twitter.com/1.1/users/show.json?screen_name={username}";
-
-                //gets friend
-                var url = $"https://api.twitter.com/1.1/friends/list.json?cursor=-1&screen_name={username}&skip_status=true&include_user_entities=false";
-                
-                //gets friend ids
-                //var url = $"https://api.twitter.com/1.1/friends/ids.json?screen_name={username}";
-
                 client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Bearer", token);
+                   new AuthenticationHeaderValue("Bearer", _options.Token);
+                client.DefaultRequestHeaders.Add("User-Agent", ".NET Telegram Bot");
 
-                client.DefaultRequestHeaders.Add("User-Agent", "C# App");
+                var resp = await client.GetAsync(string.Format(url));
 
-                var resp = await client.GetAsync(url);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    return null;
+                }
 
                 return await resp.Content.ReadAsStringAsync();
             }
         }
 
-        private async Task<string> GetTokenAsync()
+        private TwitterUser ParseUserData(string data)
         {
-            using(var client = new HttpClient())
+            var jObj = JObject.Parse(data);
+
+            var id = (long)jObj["id"];
+            var userName = (string)jObj["screen_name"];
+
+            return new TwitterUser()
             {
-                var url = $"https://api.twitter.com/oauth2/token?grant_type=client_credentials";
-
-
-                //dynamic basic = new System.Dynamic.ExpandoObject();
-
-                //basic.username = key;
-                //basic.password = secret;
-
-                var basic = Base64Encode($"{key}:{secret}");
-
-                client.DefaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("Basic", basic);
-
-                var bodyStr = "{\"grant_type\": \"client_credentials\"}";
-                var body = new StringContent(bodyStr);
-
-                var resp = await client.PostAsync(url, body);
-
-                string token = string.Empty;
-
-                if (!resp.IsSuccessStatusCode)
-                {
-                    return token;
-                }
-
-                var respStr = await resp.Content.ReadAsStringAsync();
-
-                var obj = JObject.Parse(respStr);
-
-                token = (string)obj["access_token"] ?? string.Empty;
-
-                return token;
-            }
+                UserId = id,
+                Username = userName
+            };
         }
 
-        private string Base64Encode(string plainText)
+        private List<long> ParseUserFriendIds(string data)
         {
-            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            return Convert.ToBase64String(plainTextBytes);
+            var jObj = JObject.Parse(data);
+
+            var jArray = (JArray)jObj["ids"];
+
+            return jArray.Select(j => long.Parse(j.ToString())).ToList();
         }
 
-       
+        private List<long> ParseUserFriends(string data)
+        {
+            var jObj = JObject.Parse(data);
+
+            var jArray = (JArray)jObj["users"];
+
+            return jArray.Select(j => long.Parse(j["id"].ToString())).ToList();
+        }
     }
 }

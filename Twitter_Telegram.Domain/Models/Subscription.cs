@@ -1,10 +1,10 @@
 ﻿namespace Twitter_Telegram.Domain.Models
 {
-    public class TwitterUser
+    public class Subscription
     {
-        public long UserId { get; set; }
-
         public string Username { get; set; }
+
+        public List<ulong> Friends { get; set; }
 
     }
 }
