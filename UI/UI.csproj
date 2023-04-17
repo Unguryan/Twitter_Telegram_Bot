@@ -12,7 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Twitter_Telegram.EF_Core\Twitter_Telegram.EF_Core.csproj" />
     <ProjectReference Include="..\Twitter_Telegram.Infrastructure\Twitter_Telegram.Infrastructure.csproj" />
+    <ProjectReference Include="..\Twitter_Telegram.Telegram\Twitter_Telegram.Telegram.csproj" />
   </ItemGroup>
 
   <ItemGroup>
