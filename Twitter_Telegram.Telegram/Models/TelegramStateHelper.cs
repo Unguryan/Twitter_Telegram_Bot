@@ -54,9 +54,12 @@ namespace Twitter_Telegram.Telegram.Models
                 new TelegramStateMessage()
                 {
                     State = TelegramUserState.MainMenu,
-                    Message = "Main Menu",
+                    Message = "Main Menu: ",
                     Keyboard = new ReplyKeyboardMarkup(new[]{
-                        new[] { new KeyboardButton("Add sub"), new KeyboardButton("Sub list"), new KeyboardButton("Remove sub") },
+                        new[] { new KeyboardButton("Add sub") },
+                        new[] { new KeyboardButton("Sub list") },
+                        new[] { new KeyboardButton("Remove sub") }
+                    
                     }),
                 },
                 new TelegramStateMessage()
@@ -70,7 +73,7 @@ namespace Twitter_Telegram.Telegram.Models
                 new TelegramStateMessage()
                 {
                     State = TelegramUserState.AddNewSubscriptionConfirm,
-                    Message = "User is found. User:<a href='https://twitter.com/{0}'>{0}</a>\nConfirm? (in keyboard)",
+                    Message = "User is found. User: <a href='https://twitter.com/{0}'>{0}</a>\nConfirm? (in keyboard)",
                     Keyboard = new ReplyKeyboardMarkup(new[]{
                         new[] { new KeyboardButton("Confirm") },
                         new[] { new KeyboardButton("To main menu") },

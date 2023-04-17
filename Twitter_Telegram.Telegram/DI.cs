@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;
+using Twitter_Telegram.App.Services;
 using Twitter_Telegram.App.Services.Telegram;
 using Twitter_Telegram.Domain.Config;
+using Twitter_Telegram.Infrastructure.Services;
 using Twitter_Telegram.Telegram.Services;
 
 namespace Twitter_Telegram.Telegram
@@ -24,6 +26,7 @@ namespace Twitter_Telegram.Telegram
             services.AddHostedService<PollingService>();
 
             services.AddScoped<IMessageReader, MessageReader>();
+            services.AddScoped<INotifySubscriptionService, NotifySubscriptionService>();
         }
     }
 }

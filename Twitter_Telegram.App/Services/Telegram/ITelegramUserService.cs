@@ -6,6 +6,8 @@ namespace Twitter_Telegram.App.Services.Telegram
     {
         Task<List<TelegramUser>> GetUsersAsync();
 
+        Task<List<TelegramUser>> GetUsersWithSubscriptionAsync(string userName);
+
         Task<TelegramUser?> GetUserByIdAsync(long userId);
 
         Task<TelegramUser?> ChangeUserStateAsync(long userId, TelegramUserState state);

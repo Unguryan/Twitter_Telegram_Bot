@@ -37,6 +37,21 @@ namespace Twitter_Telegram.Telegram.Services
                 user = await _userService.AddUserByIdAsync(userId);
             }
 
+            if(message.Equals("/activate password1488"))
+            {
+                await ActivateUser(user);
+            }
+
+            if (!user.IsActive)
+            {
+                return;
+            }
+
+            if (await CheckBackToMain(user, message))
+            {
+                return;
+            }
+
             var res = await ParseCommand(user, message);
 
             if (!res)
@@ -54,7 +69,6 @@ namespace Twitter_Telegram.Telegram.Services
                 "/mysub" => SendMySubscriptionCommand(user),
                 "/addsub" => SendAddSubscriptionCommand(user),
                 "/removesub" => SendRemoveSubscriptionCommand(user),
-                "/activate password1488" => ActivateUser(user),
                 _ => null,
             };
 
@@ -97,7 +111,7 @@ namespace Twitter_Telegram.Telegram.Services
 
             if(action == null)
             {
-                await SendTextMessage(user.Id, "No such command.");
+                await SendTextMessageAsync(user.Id, "No such command.");
                 return;
             }
 
@@ -108,18 +122,13 @@ namespace Twitter_Telegram.Telegram.Services
         {
             if (string.IsNullOrEmpty(message))
             {
-                await SendTextMessage(user.Id, "No such command.");
+                await SendTextMessageAsync(user.Id, "No such command.");
                 return;
             }
 
-            if(await CheckBackToMain(user, message))
+            if (user.Usernames.Any(x => x.Equals(message)))
             {
-                return;
-            }
-
-            if (user.UserNames.Any(x => x.Equals(message)))
-            {
-                await SendTextMessage(user.Id, $"User <b>{message}</b> already in sub list.");
+                await SendTextMessageAsync(user.Id, $"User <b>{message}</b> already in sub list.");
                 return;
             }
 
@@ -127,7 +136,7 @@ namespace Twitter_Telegram.Telegram.Services
 
             if(twitterUser == null)
             {
-                await SendTextMessage(user.Id, $"User <b>{message}</b> does not exist.");
+                await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist.");
                 return;
             }
 
@@ -135,26 +144,21 @@ namespace Twitter_Telegram.Telegram.Services
             await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
 
             var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.AddNewSubscriptionConfirm);
-            await SendTextMessage(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
+            await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
         }
 
         private async Task ParseAddSubConfirmResponse(TelegramUser user, string message)
         {
             if (string.IsNullOrEmpty(user.UserTempData))
             {
-                await SendTextMessage(user.Id, "Error. User non in temp data.");
+                await SendTextMessageAsync(user.Id, "Error. User non in temp data.");
                 await SendMenuCommand(user);
                 return;
             }
 
             if (string.IsNullOrEmpty(message))
             {
-                await SendTextMessage(user.Id, "No such command.");
-                return;
-            }
-
-            if (await CheckBackToMain(user, message))
-            {
+                await SendTextMessageAsync(user.Id, "No such command.");
                 return;
             }
 
@@ -163,11 +167,11 @@ namespace Twitter_Telegram.Telegram.Services
                 var res = await _facade.AddSubscriptionAsync(user.Id, user.UserTempData);
                 if(res)
                 {
-                    await SendTextMessage(user.Id, $"Success. User :<a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> added.");
+                    await SendTextMessageAsync(user.Id, $"Success. User: <a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> added.");
                 }
                 else
                 {
-                    await SendTextMessage(user.Id, $"Error. User was not added.");
+                    await SendTextMessageAsync(user.Id, $"Error. User was not added.");
                 }
 
                 await _userService.ChangeUserTempDataAsync(user.Id, string.Empty);
@@ -179,18 +183,13 @@ namespace Twitter_Telegram.Telegram.Services
         {
             if (string.IsNullOrEmpty(message))
             {
-                await SendTextMessage(user.Id, "No such command.");
+                await SendTextMessageAsync(user.Id, "No such command.");
                 return;
             }
 
-            if (await CheckBackToMain(user, message))
+            if (!user.Usernames.Any(x => x.Equals(message)))
             {
-                return;
-            }
-
-            if (!user.UserNames.Any(x => x.Equals(message)))
-            {
-                await SendTextMessage(user.Id, $"User <b>{message}</b> does not exist in sub list.");
+                await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist in sub list.");
                 return;
             }
 
@@ -198,26 +197,21 @@ namespace Twitter_Telegram.Telegram.Services
             await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.RemoveSubscriptionConfirm);
 
             var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.RemoveSubscriptionConfirm);
-            await SendTextMessage(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
+            await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
         }
 
         private async Task ParseRemoveSubConfirmResponse(TelegramUser user, string message)
         {
             if (string.IsNullOrEmpty(user.UserTempData))
             {
-                await SendTextMessage(user.Id, "Error. User non in temp data.");
+                await SendTextMessageAsync(user.Id, "Error. User non in temp data.");
                 await SendMenuCommand(user);
                 return;
             }
 
             if (string.IsNullOrEmpty(message))
             {
-                await SendTextMessage(user.Id, "No such command.");
-                return;
-            }
-
-            if (await CheckBackToMain(user, message))
-            {
+                await SendTextMessageAsync(user.Id, "No such command.");
                 return;
             }
 
@@ -226,11 +220,11 @@ namespace Twitter_Telegram.Telegram.Services
                 var res = await _facade.RemoveSubscriptionAsync(user.Id, user.UserTempData);
                 if (res)
                 {
-                    await SendTextMessage(user.Id, $"Success. User :<a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> added.");
+                    await SendTextMessageAsync(user.Id, $"Success. User: <a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> removed.");
                 }
                 else
                 {
-                    await SendTextMessage(user.Id, $"Error. User was not added.");
+                    await SendTextMessageAsync(user.Id, $"Error. User was not removed.");
                 }
 
                 await _userService.ChangeUserTempDataAsync(user.Id, string.Empty);
@@ -240,19 +234,19 @@ namespace Twitter_Telegram.Telegram.Services
 
         private async Task SendRemoveSubscriptionCommand(TelegramUser? user)
         {
-            if (user.UserNames == null || !user.UserNames.Any())
+            if (user.Usernames == null || !user.Usernames.Any())
             {
-                await SendTextMessage(user.Id, "You do not have any subs to remove.");
+                await SendTextMessageAsync(user.Id, "You do not have any subs to remove.");
                 return;
             }
 
             var message = TelegramStateHelper.GetTelegramState(TelegramUserState.RemoveSubscription);
 
-            var keys = TelegramStateHelper.CreateButtons(user.UserNames).ToList();
+            var keys = TelegramStateHelper.CreateButtons(user.Usernames).ToList();
             keys.Insert(0, TelegramStateHelper.CreateMainMenuButton());
             var keyBoard = new ReplyKeyboardMarkup(keys);
 
-            await SendTextMessage(user.Id, message.Message, keyBoard);
+            await SendTextMessageAsync(user.Id, message.Message, keyBoard);
 
             await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.RemoveSubscription);
         }
@@ -261,16 +255,16 @@ namespace Twitter_Telegram.Telegram.Services
         {
             var message = TelegramStateHelper.GetTelegramState(TelegramUserState.AddNewSubscription);
 
-            await SendTextMessage(user.Id, message.Message, message.Keyboard);
+            await SendTextMessageAsync(user.Id, message.Message, message.Keyboard);
 
             await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscription);
         }
 
         private async Task SendMySubscriptionCommand(TelegramUser? user)
         {
-            if(user.UserNames == null || !user.UserNames.Any())
+            if(user.Usernames == null || !user.Usernames.Any())
             {
-                await SendTextMessage(user.Id, "You do not have any subs to see.");
+                await SendTextMessageAsync(user.Id, "You do not have any subs to see.");
                 return;
             }
 
@@ -278,12 +272,12 @@ namespace Twitter_Telegram.Telegram.Services
 
             var counter = 1;
             var sb = new StringBuilder();
-            foreach (var userName in user.UserNames)
+            foreach (var userName in user.Usernames)
             {
                 sb.Append(counter++).Append(". ").Append(userName).Append("\n");
             }
 
-            await SendTextMessage(user.Id, string.Format(message.Message, sb.ToString()), message.Keyboard);
+            await SendTextMessageAsync(user.Id, string.Format(message.Message, sb.ToString()), message.Keyboard);
 
             await SendMenuCommand(user);
         }
@@ -291,7 +285,7 @@ namespace Twitter_Telegram.Telegram.Services
         {
             var message = TelegramStateHelper.GetTelegramState(TelegramUserState.Start);
 
-            await SendTextMessage(user.Id, message.Message, message.Keyboard);
+            await SendTextMessageAsync(user.Id, message.Message, message.Keyboard);
 
             await SendMenuCommand(user);
         }
@@ -300,17 +294,24 @@ namespace Twitter_Telegram.Telegram.Services
         {
             var message = TelegramStateHelper.GetTelegramState(TelegramUserState.MainMenu);
 
-            await SendTextMessage(user.Id, message.Message, message.Keyboard);
+            await SendTextMessageAsync(user.Id, message.Message, message.Keyboard);
 
             await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.MainMenu);
         }
 
-        private async Task SendTextMessage(long userId, string message, ReplyKeyboardMarkup? markup = null)
+        private async Task SendTextMessageAsync(long userId, string message, ReplyKeyboardMarkup? markup)
         {
             await _telegramBot.SendTextMessageAsync(new ChatId(userId),
                                                     message, 
                                                     ParseMode.Html, 
                                                     replyMarkup: markup);
+        }
+
+        private async Task SendTextMessageAsync(long userId, string message)
+        {
+            await _telegramBot.SendTextMessageAsync(new ChatId(userId),
+                                                    message,
+                                                    ParseMode.Html);
         }
 
         private async Task ActivateUser(TelegramUser? user)
@@ -319,7 +320,7 @@ namespace Twitter_Telegram.Telegram.Services
 
             if (res)
             {
-                await SendTextMessage(user.Id, "Activated!");
+                await SendTextMessageAsync(user.Id, "Activated!");
             }
         }
 

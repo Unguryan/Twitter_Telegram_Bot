@@ -6,7 +6,6 @@ namespace Twitter_Telegram.App.Services
     {
         Task<List<Subscription>> GetSubscriptionsAsync();
 
-        //Task<List<Subscription>> GetSubscriptionsByUserIdAsync(long telegramUserId);
         Task<Subscription?> GetSubscriptionsByUsernameAsync(string twitterUsername);
 
         Task<bool> ChangeSubscriptionsByUsernameAsync(string twitterUsername, List<long> friends);

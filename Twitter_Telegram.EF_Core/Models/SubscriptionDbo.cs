@@ -9,6 +9,6 @@ namespace Twitter_Telegram.EF_Core.Models
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public string Username { get; set; }
 
-        public List<long> Friends { get; set; }
+        public string FriendsJson { get; set; }
     }
 }

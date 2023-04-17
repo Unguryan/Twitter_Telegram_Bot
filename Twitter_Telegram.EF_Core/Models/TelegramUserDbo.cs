@@ -13,7 +13,7 @@ namespace Twitter_Telegram.EF_Core.Models
 
         public bool IsActive { get; set; }
 
-        public List<string> UserNames { get; set; }
+        public string UsernamesJson { get; set; }
 
         public string? UserTempData { get; set; }
     }

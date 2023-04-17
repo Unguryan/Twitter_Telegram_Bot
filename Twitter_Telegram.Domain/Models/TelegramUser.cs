@@ -8,7 +8,7 @@
 
         public bool IsActive { get; set; }
 
-        public List<string> UserNames { get; set; }
+        public List<string> Usernames { get; set; }
 
         public string? UserTempData { get; set; }
     }
