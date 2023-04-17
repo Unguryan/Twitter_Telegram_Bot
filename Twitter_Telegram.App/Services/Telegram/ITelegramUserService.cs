@@ -8,7 +8,11 @@ namespace Twitter_Telegram.App.Services.Telegram
 
         Task<TelegramUser?> GetUserByIdAsync(long userId);
 
-        Task<TelegramUser?> AddUserByIdAsync(long userId, string userName);
+        Task<TelegramUser?> ChangeUserStateAsync(long userId, TelegramUserState state);
+        
+        Task<TelegramUser?> ChangeUserTempDataAsync(long userId, string tempData);
+
+        Task<TelegramUser?> AddUserByIdAsync(long userId);
 
         Task<bool> ActivateUserByIdAsync(long userId);
 

@@ -2,5 +2,12 @@
 {
     public enum TelegramUserState
     {
+        Start,
+        MainMenu,
+        AddNewSubscription,
+        AddNewSubscriptionConfirm,
+        SubscriptionList,
+        RemoveSubscription,
+        RemoveSubscriptionConfirm,
     }
 }
