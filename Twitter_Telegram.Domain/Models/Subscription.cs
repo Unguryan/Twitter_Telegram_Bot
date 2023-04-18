@@ -6,5 +6,7 @@
 
         public List<long> Friends { get; set; }
 
+        public DateTime? LastTimeChecked { get; set; }
+
     }
 }

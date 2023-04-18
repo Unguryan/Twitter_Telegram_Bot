@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -12,51 +13,57 @@ namespace Twitter_Telegram.Telegram.Services
 {
     public class MessageReader : IMessageReader
     {
-        private readonly ITelegramUserService _userService;
+        //Just to Get updated repositories (DbContext)
+        private readonly IServiceProvider _serviceProvider;
+
         private readonly IApiReader _apiReader;
-        private readonly ISubscriptionFacade _facade;
+
         private readonly ITelegramBotClient _telegramBot;
 
-        public MessageReader(ITelegramUserService userService,
+        public MessageReader(
                              IApiReader apiReader,
-                             ISubscriptionFacade facade,
+                             IServiceProvider serviceProvider,
                              ITelegramBotClient telegramBot)
         {
-            _userService = userService;
             _apiReader = apiReader;
-            _facade = facade;
+            _serviceProvider = serviceProvider;
             _telegramBot = telegramBot;
         }
 
         public async Task ReadUserMessageAsync(long userId, string message)
         {
-            var user = await _userService.GetUserByIdAsync(userId);
-
-            if(user == null)
+            using (var scope = _serviceProvider.CreateScope())
             {
-                user = await _userService.AddUserByIdAsync(userId);
-            }
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
 
-            if(message.Equals("/activate password1488"))
-            {
-                await ActivateUser(user);
-            }
+                var user = await userService.GetUserByIdAsync(userId);
 
-            if (!user.IsActive)
-            {
-                return;
-            }
+                if (user == null)
+                {
+                    user = await userService.AddUserByIdAsync(userId);
+                }
 
-            if (await CheckBackToMain(user, message))
-            {
-                return;
-            }
+                if (message.Equals("/activate password1488"))
+                {
+                    await ActivateUser(user);
+                }
 
-            var res = await ParseCommand(user, message);
+                if (!user.IsActive)
+                {
+                    return;
+                }
 
-            if (!res)
-            {
-                await ParseMessage(user, message);
+                if (await CheckBackToMain(user, message))
+                {
+                    return;
+                }
+
+                var res = await ParseCommand(user, message);
+
+                if (!res)
+                {
+                    await ParseMessage(user, message);
+                }
             }
         }
 
@@ -72,7 +79,7 @@ namespace Twitter_Telegram.Telegram.Services
                 _ => null,
             };
 
-            if(action == null)
+            if (action == null)
             {
                 return false;
             }
@@ -93,7 +100,7 @@ namespace Twitter_Telegram.Telegram.Services
                 _ => null,
             };
 
-            if(action != null)
+            if (action != null)
             {
                 await action;
             }
@@ -109,7 +116,7 @@ namespace Twitter_Telegram.Telegram.Services
                 _ => null
             };
 
-            if(action == null)
+            if (action == null)
             {
                 await SendTextMessageAsync(user.Id, "No such command.");
                 return;
@@ -134,14 +141,18 @@ namespace Twitter_Telegram.Telegram.Services
 
             var twitterUser = await _apiReader.GetUserInfoByUsernameAsync(message);
 
-            if(twitterUser == null)
+            if (twitterUser == null)
             {
                 await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist.");
                 return;
             }
 
-            await _userService.ChangeUserTempDataAsync(user.Id, twitterUser.Username);
-            await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                await userService.ChangeUserTempDataAsync(user.Id, twitterUser.Username);
+                await userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
+            }
 
             var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.AddNewSubscriptionConfirm);
             await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
@@ -164,18 +175,23 @@ namespace Twitter_Telegram.Telegram.Services
 
             if (message.Equals("Confirm"))
             {
-                var res = await _facade.AddSubscriptionAsync(user.Id, user.UserTempData);
-                if(res)
+                using (var scope = _serviceProvider.CreateScope())
                 {
-                    await SendTextMessageAsync(user.Id, $"Success. User: <a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> added.");
-                }
-                else
-                {
-                    await SendTextMessageAsync(user.Id, $"Error. User was not added.");
-                }
+                    var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                    var facade = scope.ServiceProvider.GetRequiredService<ISubscriptionFacade>();
+                    var res = await facade.AddSubscriptionAsync(user.Id, user.UserTempData);
+                    if (res)
+                    {
+                        await SendTextMessageAsync(user.Id, $"Success. User: <a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> added.");
+                    }
+                    else
+                    {
+                        await SendTextMessageAsync(user.Id, $"Error. User was not added.");
+                    }
 
-                await _userService.ChangeUserTempDataAsync(user.Id, string.Empty);
-                await SendMenuCommand(user);
+                    await userService.ChangeUserTempDataAsync(user.Id, string.Empty);
+                    await SendMenuCommand(user);
+                }
             }
         }
 
@@ -193,8 +209,12 @@ namespace Twitter_Telegram.Telegram.Services
                 return;
             }
 
-            await _userService.ChangeUserTempDataAsync(user.Id, message);
-            await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.RemoveSubscriptionConfirm);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                await userService.ChangeUserTempDataAsync(user.Id, message);
+                await userService.ChangeUserStateAsync(user.Id, TelegramUserState.RemoveSubscriptionConfirm);
+            }
 
             var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.RemoveSubscriptionConfirm);
             await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
@@ -217,18 +237,24 @@ namespace Twitter_Telegram.Telegram.Services
 
             if (message.Equals("Confirm"))
             {
-                var res = await _facade.RemoveSubscriptionAsync(user.Id, user.UserTempData);
-                if (res)
+                using (var scope = _serviceProvider.CreateScope())
                 {
-                    await SendTextMessageAsync(user.Id, $"Success. User: <a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> removed.");
-                }
-                else
-                {
-                    await SendTextMessageAsync(user.Id, $"Error. User was not removed.");
-                }
+                    var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                    var facade = scope.ServiceProvider.GetRequiredService<ISubscriptionFacade>();
 
-                await _userService.ChangeUserTempDataAsync(user.Id, string.Empty);
-                await SendMenuCommand(user);
+                    var res = await facade.RemoveSubscriptionAsync(user.Id, user.UserTempData);
+                    if (res)
+                    {
+                        await SendTextMessageAsync(user.Id, $"Success. User: <a href='https://twitter.com/{user.UserTempData}'>{user.UserTempData}</a> removed.");
+                    }
+                    else
+                    {
+                        await SendTextMessageAsync(user.Id, $"Error. User was not removed.");
+                    }
+
+                    await userService.ChangeUserTempDataAsync(user.Id, string.Empty);
+                    await SendMenuCommand(user);
+                }
             }
         }
 
@@ -248,7 +274,11 @@ namespace Twitter_Telegram.Telegram.Services
 
             await SendTextMessageAsync(user.Id, message.Message, keyBoard);
 
-            await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.RemoveSubscription);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                await userService.ChangeUserStateAsync(user.Id, TelegramUserState.RemoveSubscription);
+            }
         }
 
         private async Task SendAddSubscriptionCommand(TelegramUser? user)
@@ -257,29 +287,44 @@ namespace Twitter_Telegram.Telegram.Services
 
             await SendTextMessageAsync(user.Id, message.Message, message.Keyboard);
 
-            await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscription);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                await userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscription);
+            }
         }
 
         private async Task SendMySubscriptionCommand(TelegramUser? user)
         {
-            if(user.Usernames == null || !user.Usernames.Any())
+            if (user.Usernames == null || !user.Usernames.Any())
             {
                 await SendTextMessageAsync(user.Id, "You do not have any subs to see.");
                 return;
             }
 
-            var message = TelegramStateHelper.GetTelegramState(TelegramUserState.SubscriptionList);
-
-            var counter = 1;
-            var sb = new StringBuilder();
-            foreach (var userName in user.Usernames)
+            using (var scope = _serviceProvider.CreateScope())
             {
-                sb.Append(counter++).Append(". ").Append(userName).Append("\n");
+                var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
+                var subs = await subscriptionService.GetSubscriptionsAsync();
+
+                var subsToSee = subs.Where(s => user.Usernames.Any(x => x.Equals(s.Username)));
+
+                var message = TelegramStateHelper.GetTelegramState(TelegramUserState.SubscriptionList);
+
+                var counter = 1;
+                var sb = new StringBuilder();
+                foreach (var sub in subsToSee)
+                {
+                    sb.Append(counter++).Append(". ").Append(sub.Username)
+                        .Append(": ").Append(sub.Friends?.Count)
+                        .Append(" F, ").Append(sub.LastTimeChecked?.ToShortTimeString())
+                        .Append("\n");
+                }
+
+                await SendTextMessageAsync(user.Id, string.Format(message.Message, sb.ToString()), message.Keyboard);
+
+                await SendMenuCommand(user);
             }
-
-            await SendTextMessageAsync(user.Id, string.Format(message.Message, sb.ToString()), message.Keyboard);
-
-            await SendMenuCommand(user);
         }
         private async Task SendStartCommand(TelegramUser? user)
         {
@@ -296,14 +341,18 @@ namespace Twitter_Telegram.Telegram.Services
 
             await SendTextMessageAsync(user.Id, message.Message, message.Keyboard);
 
-            await _userService.ChangeUserStateAsync(user.Id, TelegramUserState.MainMenu);
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                await userService.ChangeUserStateAsync(user.Id, TelegramUserState.MainMenu);
+            }
         }
 
         private async Task SendTextMessageAsync(long userId, string message, ReplyKeyboardMarkup? markup)
         {
             await _telegramBot.SendTextMessageAsync(new ChatId(userId),
-                                                    message, 
-                                                    ParseMode.Html, 
+                                                    message,
+                                                    ParseMode.Html,
                                                     replyMarkup: markup);
         }
 
@@ -316,11 +365,15 @@ namespace Twitter_Telegram.Telegram.Services
 
         private async Task ActivateUser(TelegramUser? user)
         {
-            var res = await _userService.ActivateUserByIdAsync(user.Id);
-
-            if (res)
+            using (var scope = _serviceProvider.CreateScope())
             {
-                await SendTextMessageAsync(user.Id, "Activated!");
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                var res = await userService.ActivateUserByIdAsync(user.Id);
+
+                if (res)
+                {
+                    await SendTextMessageAsync(user.Id, "Activated!");
+                }
             }
         }
 

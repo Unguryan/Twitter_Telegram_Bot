@@ -1,7 +1,9 @@
-﻿namespace Twitter_Telegram.App.Services.Chucks
+﻿using Twitter_Telegram.Domain.Models;
+
+namespace Twitter_Telegram.App.Services.Chucks
 {
     public interface ISubscriptionWorkerService
     {
-        Task<int> CheckSubscriptions(CancellationToken cancellationToken);
+        Task<List<Subscription>> CheckSubscriptions(List<Subscription> subs, CancellationToken cancellationToken);
     }
 }

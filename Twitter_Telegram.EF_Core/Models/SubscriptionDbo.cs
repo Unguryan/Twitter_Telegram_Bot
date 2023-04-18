@@ -10,5 +10,7 @@ namespace Twitter_Telegram.EF_Core.Models
         public string Username { get; set; }
 
         public string FriendsJson { get; set; }
+
+        public DateTime? LastTimeChecked { get; set; }
     }
 }

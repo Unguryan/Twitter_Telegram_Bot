@@ -25,6 +25,11 @@ namespace Twitter_Telegram.Infrastructure.Services
 
         public async Task<Subscription?> AddSubscriptionAsync(string twitterUsername)
         {
+            if (string.IsNullOrEmpty(twitterUsername))
+            {
+                return null;
+            }
+
             var sub = await _subscriptionRepository.GetSubscriptionsByUsernameAsync(twitterUsername);
 
             if(sub != null)

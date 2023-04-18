@@ -1,7 +1,9 @@
-﻿namespace Twitter_Telegram.Domain.ViewModels
+﻿using Twitter_Telegram.Domain.Models;
+
+namespace Twitter_Telegram.Domain.ViewModels
 {
     public class ChunkViewModel
     {
-        public List<string> Usernames { get; set; }
+        public List<Subscription> Subscriptions { get; set; }
     }
 }

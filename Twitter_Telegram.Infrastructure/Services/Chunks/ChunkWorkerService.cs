@@ -1,101 +1,67 @@
 ﻿using Twitter_Telegram.App.Services;
 using Twitter_Telegram.App.Services.Chucks;
+using Twitter_Telegram.App.Services.Telegram;
+using Twitter_Telegram.Domain.Models;
 using Twitter_Telegram.Domain.ViewModels;
 
 namespace Twitter_Telegram.Infrastructure.Services.Chunks
 {
     public class ChunkWorkerService : IChunkWorkerService
     {
-        private readonly ISubscriptionService _subscriptionService;
 
         private readonly INotifySubscriptionService _notifySubscriptionService;
 
+        private readonly ITelegramUserService _userService;
+
         private readonly IApiReader _apiReader;
 
-        public ChunkWorkerService(ISubscriptionService subscriptionService,
+        public ChunkWorkerService(
                                   INotifySubscriptionService notifySubscriptionService,
+                                  ITelegramUserService userService,
                                   IApiReader apiReader)
         {
-            _subscriptionService = subscriptionService;
-            _apiReader = apiReader;
             _notifySubscriptionService = notifySubscriptionService;
+            _userService = userService;
+            _apiReader = apiReader;
         }
 
-        public async Task<List<string>?> CheckChunkV1(ChunkViewModel chunk)
+        public async Task<List<Subscription>?> CheckChunkV2(ChunkViewModel chunk)
         {
-            var outs = new List<string>();
+            var updatedV2 = new List<Subscription>();
 
-            foreach (var userName in chunk.Usernames)
+            foreach (var sub in chunk.Subscriptions)
             {
-                var savedSub = await _subscriptionService.GetSubscriptionsByUsernameAsync(userName);
-                var updatedSubFriends = await _apiReader.GetUserFriendsByUsernameAsync(userName);
-
-                if (updatedSubFriends == null)
-                {
-                    outs.Add(userName);
-                    continue;
-                }
-
-                if(savedSub == null)
-                {
-                    savedSub = await _subscriptionService.AddSubscriptionAsync(userName);
-                }
-
-                if (savedSub?.Friends == null || !savedSub.Friends.Any())
-                {
-                    await _subscriptionService.ChangeSubscriptionsByUsernameAsync(userName, updatedSubFriends);
-                    continue;
-                }
-
-                var newSubs = await CheckSubscription(savedSub.Friends, updatedSubFriends);
-                await _subscriptionService.ChangeSubscriptionsByUsernameAsync(userName, updatedSubFriends);
-
-                if (newSubs.Any())
-                {
-                    await _notifySubscriptionService.NotifyUsersAsync(userName, newSubs);
-                }
-            }
-
-            return outs.Any() ? outs : null;
-        }
-
-        public async Task<List<string>?> CheckChunkV2(ChunkViewModel chunk)
-        {
-            var outs = new List<string>();
-
-            foreach (var userName in chunk.Usernames)
-            {
-                var savedSub = await _subscriptionService.GetSubscriptionsByUsernameAsync(userName);
-                var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(userName);
+                var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username);
 
 
                 if (updatedSubFriends == null)
                 {
-                    outs.Add(userName);
                     continue;
                 }
 
-                if (savedSub == null)
+                var updatedSub = new Subscription()
                 {
-                    savedSub = await _subscriptionService.AddSubscriptionAsync(userName);
-                }
+                    Username = sub.Username,
+                    Friends = updatedSubFriends,
+                    LastTimeChecked = sub.LastTimeChecked
+                };
 
-                if (savedSub?.Friends == null || !savedSub.Friends.Any())
+                if (sub?.Friends == null || sub.LastTimeChecked == null)
                 {
-                    await _subscriptionService.ChangeSubscriptionsByUsernameAsync(userName, updatedSubFriends);
+                    updatedV2.Add(updatedSub);
                     continue;
                 }
 
-                var newSubs = await CheckSubscription(savedSub.Friends, updatedSubFriends);
-                await _subscriptionService.ChangeSubscriptionsByUsernameAsync(userName, updatedSubFriends);
+                var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends);
+                updatedV2.Add(updatedSub);
 
                 if (newSubs.Any())
                 {
-                    await _notifySubscriptionService.NotifyUsersAsync(userName, newSubs);
+                    await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
                 }
             }
 
-            return outs.Any() ? outs : null;
+            return updatedV2.Any() ? updatedV2 : null;
         }
 
         private async Task<List<long>> CheckSubscription(List<long> saved, List<long> updated)

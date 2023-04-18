@@ -50,6 +50,7 @@ namespace Twitter_Telegram.EF_Core.Repositories
             {
                 Username = twitterUsername,
                 FriendsJson = string.Empty,
+                LastTimeChecked = null
             });
 
             var res = await _context.SaveChangesAsync();
@@ -67,6 +68,7 @@ namespace Twitter_Telegram.EF_Core.Repositories
             var sub = await _context.Subscriptions.FirstOrDefaultAsync(u => u.Username == twitterUsername);
 
             sub.FriendsJson = JsonConvert.SerializeObject(friends);
+            sub.LastTimeChecked = DateTime.Now;
 
             var res = await _context.SaveChangesAsync();
             return res > 0;
