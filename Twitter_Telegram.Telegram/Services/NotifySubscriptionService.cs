@@ -35,7 +35,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                 }
                 else
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(15));
+                    await Task.Delay(TimeSpan.FromSeconds(15));
                     user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
                     friends.Add(user);
                 }
@@ -43,19 +43,32 @@ namespace Twitter_Telegram.Infrastructure.Services
 
             foreach (var userId in users.Select(u => u.Id))
             {
-                foreach (var userName in friends.Select(f => f.Username))
-                {
-                    var message = CreateMessage(subUsername, userName);
-                    await SendTextMessageAsync(userId, message);
-                }
+                var message = CreateMessage(subUsername, friends.Select(f => f.Username).ToList());
+                await SendTextMessageAsync(userId, message);
             }
         }
 
-        private string CreateMessage(string subUsername, string userName)
+        public async Task SubscriptionRemovedAsync(long userId, string username)
         {
+            var message = CreateErrorMessage(username);
+            await SendTextMessageAsync(userId, message);
+        }
+
+        private string CreateErrorMessage(string userName)
+        {
+            return "<b>Error!</b>\n\n" +
+                  $"Sub: <a href='https://twitter.com/{userName}'>{userName}</a> was not found. REMOVED!";
+        }
+
+        private string CreateMessage(string subUsername, List<string> userNames)
+        {
+            var subMessage = "";
+            userNames.ForEach(u =>
+                subMessage += $"New following: <a href='https://twitter.com/{u}'>{u}</a>\n"
+            );
             return "<b>New following!</b>\n\n" +
-                  $"Sub: <a href='https://twitter.com/{subUsername}'>{subUsername}</a>\n" +
-                  $"New following: <a href='https://twitter.com/{userName}'>{userName}</a>";
+                  $"Sub: <a href='https://twitter.com/{subUsername}'>{subUsername}</a>\n\n" +
+                  subMessage;
         }
 
         private async Task SendTextMessageAsync(long userId, string message)

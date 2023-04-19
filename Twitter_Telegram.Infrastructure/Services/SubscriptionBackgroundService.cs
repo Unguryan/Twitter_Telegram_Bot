@@ -43,6 +43,8 @@ namespace Twitter_Telegram.Infrastructure.Services
                         var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
                         var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
                         var apiReader = scope.ServiceProvider.GetRequiredService<IApiReader>();
+                        var notifyService = scope.ServiceProvider.GetRequiredService<INotifySubscriptionService>();
+
                         subs = await subscriptionService.GetSubscriptionsAsync();
                         foreach (var sub in subs)
                         {
@@ -58,6 +60,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                                     foreach (var user in users)
                                     {
                                         await userService.RemoveSubscriptionAsync(user.Id, sub.Username);
+                                        await notifyService.SubscriptionRemovedAsync(user.Id, sub.Username);
                                     }
                                 }
 
@@ -72,18 +75,53 @@ namespace Twitter_Telegram.Infrastructure.Services
                         {
                             var subService = scope.ServiceProvider.GetRequiredService<ISubscriptionWorkerService>();
                             var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
+                            var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                            var notifyService = scope.ServiceProvider.GetRequiredService<INotifySubscriptionService>();
 
                             var updatedSubs = await subService.CheckSubscriptions(subs, stoppingToken);
 
                             foreach (var sub in updatedSubs)
                             {
-                                var subToRemove = subs.First(s => s.Username == sub.Username);
-                                subs.Remove(subToRemove);
+                                if (!sub.IsFound)
+                                {
+                                    var subToRemove = subs.First(s => s.Username == sub.Subscription.Username);
+                                    subs.Remove(subToRemove);
+                                    //await subscriptionService.RemoveSubscriptionAsync(sub.Subscription.Username);
 
-                                await subscriptionService.ChangeSubscriptionsByUsernameAsync(sub.Username, sub.Friends);
+                                    //var users = await userService.GetUsersWithSubscriptionAsync(sub.Subscription.Username);
+
+                                    //if (users.Any())
+                                    //{
+                                    //    foreach (var user in users)
+                                    //    {
+                                    //        await userService.RemoveSubscriptionAsync(user.Id, sub.Subscription.Username);
+                                    //        await notifyService.SubscriptionRemovedAsync(user.Id, sub.Subscription.Username);
+                                    //    }
+                                    //}
+
+                                    continue;
+                                }
+
+                                if (sub.IsChecked)
+                                {
+                                    var subToRemove = subs.First(s => s.Username == sub.Subscription.Username);
+                                    subs.Remove(subToRemove);
+                                    await subscriptionService.ChangeSubscriptionLastTimeCheckAsync(sub.Subscription.Username);
+                                    _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}:" + $"Checked: {sub.Subscription.Username},Friends: {sub.Subscription.FriendsCount}");
+                                }
+
+                                if (sub.IsUpdated)
+                                {
+                                    await subscriptionService.ChangeSubscriptionsByUsernameAsync(
+                                        sub.Subscription.Username,
+                                        sub.Subscription.FriendsCount.Value,
+                                        sub.Subscription.Friends);
+
+                                    _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}:" + $"Updated: {sub.Subscription.Username},Friends: {sub.Subscription.FriendsCount}");
+                                }
                             }
 
-                            _logger.LogInformation($"{DateTime.Now.ToShortTimeString()}:" +
+                            _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}:" +
                                $" Subscription worker: Checked {updatedSubs.Count} username. Subs Remain: {subs.Count}");
                         }
 

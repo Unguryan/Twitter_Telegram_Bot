@@ -50,6 +50,8 @@ namespace Twitter_Telegram.EF_Core.Repositories
             {
                 Username = twitterUsername,
                 FriendsJson = string.Empty,
+                IsInit = false,
+                FriendsCount = null,
                 LastTimeChecked = null
             });
 
@@ -62,13 +64,28 @@ namespace Twitter_Telegram.EF_Core.Repositories
 
             return null;
         }
+        public async Task<bool> ChangeSubscriptionLastTimeCheckAsync(string twitterUsername)
+        {
+            var sub = await _context.Subscriptions.FirstOrDefaultAsync(u => u.Username == twitterUsername);
 
-        public async Task<bool> ChangeSubscriptionsByUsernameAsync(string twitterUsername, List<long> friends)
+            sub.LastTimeChecked = DateTime.Now;
+
+            var res = await _context.SaveChangesAsync();
+            return res > 0;
+        }
+
+        public async Task<bool> ChangeSubscriptionsByUsernameAsync(string twitterUsername, int friendsCount, List<long> friends)
         {
             var sub = await _context.Subscriptions.FirstOrDefaultAsync(u => u.Username == twitterUsername);
 
             sub.FriendsJson = JsonConvert.SerializeObject(friends);
             sub.LastTimeChecked = DateTime.Now;
+            sub.FriendsCount = friendsCount;
+
+            if (!sub.IsInit)
+            {
+                sub.IsInit = true;
+            }
 
             var res = await _context.SaveChangesAsync();
             return res > 0;
@@ -103,5 +120,7 @@ namespace Twitter_Telegram.EF_Core.Repositories
 
             return res;
         }
+
+        
     }
 }

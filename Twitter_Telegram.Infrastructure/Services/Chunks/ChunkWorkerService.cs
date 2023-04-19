@@ -11,57 +11,144 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
 
         private readonly INotifySubscriptionService _notifySubscriptionService;
 
-        private readonly ITelegramUserService _userService;
+        //private readonly ITelegramUserService _userService;
 
         private readonly IApiReader _apiReader;
 
         public ChunkWorkerService(
                                   INotifySubscriptionService notifySubscriptionService,
-                                  ITelegramUserService userService,
+                                  //ITelegramUserService userService,
                                   IApiReader apiReader)
         {
             _notifySubscriptionService = notifySubscriptionService;
-            _userService = userService;
+            //_userService = userService;
             _apiReader = apiReader;
         }
 
-        public async Task<List<Subscription>?> CheckChunkV2(ChunkViewModel chunk)
+        //public async Task<List<Subscription>?> CheckChunkV2(ChunkViewModel chunk)
+        //{
+        //    var updatedV2 = new List<Subscription>();
+
+        //    foreach (var sub in chunk.Subscriptions)
+        //    {
+        //        var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username);
+
+
+        //        if (updatedSubFriends == null)
+        //        {
+        //            continue;
+        //        }
+
+        //        var updatedSub = new Subscription()
+        //        {
+        //            Username = sub.Username,
+        //            Friends = updatedSubFriends,
+        //            LastTimeChecked = sub.LastTimeChecked
+        //        };
+
+        //        if (sub?.Friends == null || sub.LastTimeChecked == null)
+        //        {
+        //            updatedV2.Add(updatedSub);
+        //            continue;
+        //        }
+
+        //        var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends);
+        //        updatedV2.Add(updatedSub);
+
+        //        if (newSubs.Any())
+        //        {
+        //            await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
+        //        }
+        //    }
+
+        //    return updatedV2.Any() ? updatedV2 : null;
+        //}
+
+        public async Task<CheckSubscriptionResultViewModel> CheckV2(Subscription sub)
         {
-            var updatedV2 = new List<Subscription>();
-
-            foreach (var sub in chunk.Subscriptions)
+            var subInfo = await _apiReader.GetUserInfoByUsernameAsync(sub.Username);
+            if(subInfo == null)
             {
-                var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username);
-
-
-                if (updatedSubFriends == null)
+                return new CheckSubscriptionResultViewModel()
                 {
-                    continue;
-                }
-
-                var updatedSub = new Subscription()
-                {
-                    Username = sub.Username,
-                    Friends = updatedSubFriends,
-                    LastTimeChecked = sub.LastTimeChecked
+                    Subscription = sub,
+                    IsFound = false,
+                    IsChecked = true
                 };
-
-                if (sub?.Friends == null || sub.LastTimeChecked == null)
-                {
-                    updatedV2.Add(updatedSub);
-                    continue;
-                }
-
-                var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends);
-                updatedV2.Add(updatedSub);
-
-                if (newSubs.Any())
-                {
-                    await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
-                }
             }
 
-            return updatedV2.Any() ? updatedV2 : null;
+            if (!sub.IsInit)
+            {
+                return await InitSubcription(sub, subInfo);
+            }
+
+            if(sub.FriendsCount == subInfo.FriendsCount)
+            {
+                return new CheckSubscriptionResultViewModel()
+                {
+                    IsFound = true,
+                    IsChecked = true,
+                    IsUpdated = false,
+                    Subscription = sub
+                };
+            }
+
+            var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.FriendsCount);
+
+            if(updatedSubFriends == null)
+            {
+                return new CheckSubscriptionResultViewModel()
+                {
+                    IsFound = true,
+                    IsChecked = false,
+                    IsUpdated = false,
+                    Subscription = sub
+                };
+            }
+
+            var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends);
+            if (newSubs.Any())
+            {
+                await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
+            }
+
+            sub.Friends = updatedSubFriends;
+            sub.FriendsCount = subInfo.FriendsCount;
+
+            return new CheckSubscriptionResultViewModel()
+            {
+                IsFound = true,
+                IsChecked = true,
+                IsUpdated = true,
+                Subscription = sub
+            };
+        }
+
+        private async Task<CheckSubscriptionResultViewModel> InitSubcription(Subscription sub, TwitterUser subInfo)
+        {
+            var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.FriendsCount);
+
+            if (updatedSubFriends == null)
+            {
+                return new CheckSubscriptionResultViewModel()
+                {
+                    IsFound = true,
+                    IsChecked = false,
+                    IsUpdated = false,
+                    Subscription = sub
+                };
+            }
+
+            sub.Friends = updatedSubFriends;
+            sub.FriendsCount = subInfo.FriendsCount;
+
+            return new CheckSubscriptionResultViewModel()
+            {
+                IsFound = true,
+                IsChecked = true,
+                IsUpdated = true,
+                Subscription = sub
+            };
         }
 
         private async Task<List<long>> CheckSubscription(List<long> saved, List<long> updated)

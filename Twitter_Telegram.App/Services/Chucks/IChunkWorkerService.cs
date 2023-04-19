@@ -5,6 +5,8 @@ namespace Twitter_Telegram.App.Services.Chucks
 {
     public interface IChunkWorkerService
     {
-        Task<List<Subscription>?> CheckChunkV2(ChunkViewModel chunk);
+        //Task<List<Subscription>?> CheckChunkV2(ChunkViewModel chunk);
+
+        Task<CheckSubscriptionResultViewModel?> CheckV2(Subscription sub);
     }
 }

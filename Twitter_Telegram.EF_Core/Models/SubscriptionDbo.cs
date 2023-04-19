@@ -11,6 +11,10 @@ namespace Twitter_Telegram.EF_Core.Models
 
         public string FriendsJson { get; set; }
 
+        public bool IsInit { get; set; }
+
+        public int? FriendsCount { get; set; }
+
         public DateTime? LastTimeChecked { get; set; }
     }
 }

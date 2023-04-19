@@ -6,5 +6,7 @@
 
         public string Username { get; set; }
 
+        public int FriendsCount { get; set; }
+
     }
 }

@@ -4,9 +4,9 @@ namespace Twitter_Telegram.App.Services
 {
     public interface IApiReader
     {
-        Task<List<long>?> GetUserFriendsByUsernameAsync(string username);
+        //Task<List<long>?> GetUserFriendsByUsernameAsync(string username);
 
-        Task<List<long>?> GetUserFriendIdsByUsernameAsync(string username);
+        Task<List<long>?> GetUserFriendIdsByUsernameAsync(string username, int count);
 
         Task<TwitterUser?> GetUserInfoByUserIdAsync(string userId);
 

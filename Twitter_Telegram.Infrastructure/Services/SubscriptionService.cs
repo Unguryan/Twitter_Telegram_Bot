@@ -40,7 +40,7 @@ namespace Twitter_Telegram.Infrastructure.Services
             return await _subscriptionRepository.AddSubscriptionAsync(twitterUsername);
         }
 
-        public async Task<bool> ChangeSubscriptionsByUsernameAsync(string twitterUsername, List<long> friends)
+        public async Task<bool> ChangeSubscriptionsByUsernameAsync(string twitterUsername, int friendsCount, List<long> friends)
         {
             var sub = await _subscriptionRepository.GetSubscriptionsByUsernameAsync(twitterUsername);
 
@@ -49,7 +49,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                 return false;
             }
 
-            return await _subscriptionRepository.ChangeSubscriptionsByUsernameAsync(twitterUsername, friends);
+            return await _subscriptionRepository.ChangeSubscriptionsByUsernameAsync(twitterUsername, friendsCount, friends);
         }
 
         public async Task<Subscription?> RemoveSubscriptionAsync(string twitterUsername)
@@ -62,6 +62,18 @@ namespace Twitter_Telegram.Infrastructure.Services
             }
 
             return await _subscriptionRepository.RemoveSubscriptionAsync(twitterUsername);
+        }
+
+        public async Task<bool> ChangeSubscriptionLastTimeCheckAsync(string twitterUsername)
+        {
+            var sub = await _subscriptionRepository.GetSubscriptionsByUsernameAsync(twitterUsername);
+
+            if (sub == null)
+            {
+                return false;
+            }
+
+            return await _subscriptionRepository.ChangeSubscriptionLastTimeCheckAsync(twitterUsername);
         }
     }
 }
