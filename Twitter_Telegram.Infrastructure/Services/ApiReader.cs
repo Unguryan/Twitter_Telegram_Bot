@@ -99,18 +99,6 @@ namespace Twitter_Telegram.Infrastructure.Services
             };
         }
 
-        //public async Task<List<long>?> GetUserFriendsByUsernameAsync(string username)
-        //{
-        //    var url = string.Format(TwitterHelper.UserIFriendsByUsernameUrl, username);
-        //    var respStr = await SendRequestAsync(url);
-
-        //    if (string.IsNullOrEmpty(respStr))
-        //    {
-        //        return null;
-        //    }
-        //    return ParseUserFriends(respStr);
-        //}
-
         public async Task<GetUserInfoResultViewModel> GetUserInfoByUserIdAsync(string userId)
         {
             var url = string.Format(TwitterHelper.UserInfoByIdUrl, userId);
@@ -197,19 +185,16 @@ namespace Twitter_Telegram.Infrastructure.Services
                         if (resp.ReasonPhrase == "Too Many Requests")
                         {
                             _logger.LogError($"{DateTime.Now.ToShortTimeString()}:" + $"To Many Requests\n{url}");
-                            //await Task.Delay(TimeSpan.FromMinutes(15));
                             return "Too Many Requests";
                         }
                         if (resp.ReasonPhrase == "Not Found")
                         {
                             _logger.LogError($"{DateTime.Now.ToShortTimeString()}:" + $"NotFound\n{url}");
-                            _logger.LogError($"{url}");
                             return null;
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"{DateTime.Now.ToShortTimeString()}:" + $"Success Read: {url}");
                         _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}:" + $"Success Read: {url}");
                         return await resp.Content.ReadAsStringAsync();
                     }

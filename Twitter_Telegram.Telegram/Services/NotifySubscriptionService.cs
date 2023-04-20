@@ -46,19 +46,6 @@ namespace Twitter_Telegram.Infrastructure.Services
                     friends.Add(user.TwitterUser);
                     break;
                 }
-               
-
-                
-                //if (user != null)
-                //{
-                //    friends.Add(user);
-                //}
-                //else
-                //{
-                //    await Task.Delay(TimeSpan.FromSeconds(15));
-                //    user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
-                //    friends.Add(user);
-                //}
             }
 
             foreach (var userId in users.Select(u => u.Id))

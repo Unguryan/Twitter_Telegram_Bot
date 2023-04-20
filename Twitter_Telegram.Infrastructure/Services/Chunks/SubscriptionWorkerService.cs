@@ -26,27 +26,7 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
 
                 updatedSubs.Add(resVM);
 
-                //if (resVM.IsChecked)
-                //{
-                //    updatedSubs.Add(resVM);
-                //}
             }
-
-            //var chunks = await _chunkFactory.CreateChunksAsync(subs);
-
-            //    for (int i = 0; i < chunks.Count; i++)
-            //    {
-            //        var firstChuck = chunks[i];
-            //        var updatedV1 = await _chunkWorkerService.CheckChunkV2(firstChuck);
-
-            //        if (updatedV1 != null && updatedV1.Any())
-            //        {
-            //            foreach (var item in updatedV1)
-            //            {
-            //                updatedSubs.Add(item);
-            //            }
-            //        }
-            //    }
 
             return updatedSubs;
         }
