@@ -28,17 +28,37 @@ namespace Twitter_Telegram.Infrastructure.Services
 
             foreach (var friendId in updatedFriends)
             {
-                var user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
-                if (user != null)
+                while (true)
                 {
-                    friends.Add(user);
+                    var user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
+
+                    if (user.IsOut)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(15));
+                        continue;
+                    }
+
+                    if (!user.IsFound)
+                    {
+                        break;
+                    }
+
+                    friends.Add(user.TwitterUser);
+                    break;
                 }
-                else
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(15));
-                    user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
-                    friends.Add(user);
-                }
+               
+
+                
+                //if (user != null)
+                //{
+                //    friends.Add(user);
+                //}
+                //else
+                //{
+                //    await Task.Delay(TimeSpan.FromSeconds(15));
+                //    user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
+                //    friends.Add(user);
+                //}
             }
 
             foreach (var userId in users.Select(u => u.Id))

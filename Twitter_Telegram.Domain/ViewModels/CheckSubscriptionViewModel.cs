@@ -6,6 +6,8 @@ namespace Twitter_Telegram.Domain.ViewModels
     {
         public Subscription Subscription { get; set; }
 
+        public bool IsOut { get; set; }
+
         public bool IsFound { get; set; }
         
         public bool IsChecked { get; set; }

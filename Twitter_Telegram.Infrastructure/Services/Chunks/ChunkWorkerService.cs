@@ -8,69 +8,37 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
 {
     public class ChunkWorkerService : IChunkWorkerService
     {
-
         private readonly INotifySubscriptionService _notifySubscriptionService;
-
-        //private readonly ITelegramUserService _userService;
-
         private readonly IApiReader _apiReader;
 
         public ChunkWorkerService(
                                   INotifySubscriptionService notifySubscriptionService,
-                                  //ITelegramUserService userService,
                                   IApiReader apiReader)
         {
             _notifySubscriptionService = notifySubscriptionService;
-            //_userService = userService;
             _apiReader = apiReader;
         }
-
-        //public async Task<List<Subscription>?> CheckChunkV2(ChunkViewModel chunk)
-        //{
-        //    var updatedV2 = new List<Subscription>();
-
-        //    foreach (var sub in chunk.Subscriptions)
-        //    {
-        //        var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username);
-
-
-        //        if (updatedSubFriends == null)
-        //        {
-        //            continue;
-        //        }
-
-        //        var updatedSub = new Subscription()
-        //        {
-        //            Username = sub.Username,
-        //            Friends = updatedSubFriends,
-        //            LastTimeChecked = sub.LastTimeChecked
-        //        };
-
-        //        if (sub?.Friends == null || sub.LastTimeChecked == null)
-        //        {
-        //            updatedV2.Add(updatedSub);
-        //            continue;
-        //        }
-
-        //        var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends);
-        //        updatedV2.Add(updatedSub);
-
-        //        if (newSubs.Any())
-        //        {
-        //            await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
-        //        }
-        //    }
-
-        //    return updatedV2.Any() ? updatedV2 : null;
-        //}
 
         public async Task<CheckSubscriptionResultViewModel> CheckV2(Subscription sub)
         {
             var subInfo = await _apiReader.GetUserInfoByUsernameAsync(sub.Username);
-            if(subInfo == null)
+
+            if (subInfo.IsOut)
             {
                 return new CheckSubscriptionResultViewModel()
                 {
+                    IsOut = true,
+                    Subscription = sub,
+                    IsFound = false,
+                    IsChecked = false,
+                };
+            }
+
+            if (!subInfo.IsFound && !subInfo.IsOut)
+            {
+                return new CheckSubscriptionResultViewModel()
+                {
+                    IsOut = false,
                     Subscription = sub,
                     IsFound = false,
                     IsChecked = true
@@ -79,47 +47,62 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
 
             if (!sub.IsInit)
             {
-                return await InitSubcription(sub, subInfo);
+                return await InitSubcription(sub, subInfo.TwitterUser);
             }
 
-            if(sub.FriendsCount == subInfo.FriendsCount)
+            if(sub.FriendsCount == subInfo.TwitterUser.FriendsCount)
             {
                 return new CheckSubscriptionResultViewModel()
                 {
                     IsFound = true,
                     IsChecked = true,
                     IsUpdated = false,
+                    IsOut = false,
                     Subscription = sub
                 };
             }
 
-            var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.FriendsCount);
+            var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.TwitterUser.FriendsCount);
 
-            if(updatedSubFriends == null)
+            if (updatedSubFriends.IsOut)
             {
                 return new CheckSubscriptionResultViewModel()
                 {
-                    IsFound = true,
+                    IsOut = true,
+                    IsFound = false,
                     IsChecked = false,
                     IsUpdated = false,
                     Subscription = sub
                 };
             }
 
-            var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends);
+            if (!updatedSubFriends.IsFound && !updatedSubFriends.IsOut)
+            {
+                return new CheckSubscriptionResultViewModel()
+                {
+                    IsFound = true,
+                    IsChecked = false,
+                    IsUpdated = false,
+                    IsOut = false,
+                    Subscription = sub
+                };
+            }
+
+            var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends.FriendIds);
             if (newSubs.Any())
             {
                 await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
             }
 
-            sub.Friends = updatedSubFriends;
-            sub.FriendsCount = subInfo.FriendsCount;
+            sub.Friends = updatedSubFriends.FriendIds;
+            sub.FriendsCount = subInfo.TwitterUser.FriendsCount;
 
             return new CheckSubscriptionResultViewModel()
             {
                 IsFound = true,
                 IsChecked = true,
                 IsUpdated = true,
+                IsOut = false,
                 Subscription = sub
             };
         }
@@ -128,18 +111,31 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
         {
             var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.FriendsCount);
 
-            if (updatedSubFriends == null)
+            if (updatedSubFriends.IsOut)
             {
                 return new CheckSubscriptionResultViewModel()
                 {
-                    IsFound = true,
+                    IsOut = true,
+                    IsFound = false,
                     IsChecked = false,
                     IsUpdated = false,
                     Subscription = sub
                 };
             }
 
-            sub.Friends = updatedSubFriends;
+            if (!updatedSubFriends.IsFound && !updatedSubFriends.IsOut)
+            {
+                return new CheckSubscriptionResultViewModel()
+                {
+                    IsFound = true,
+                    IsChecked = false,
+                    IsUpdated = false,
+                    IsOut = false,
+                    Subscription = sub
+                };
+            }
+
+            sub.Friends = updatedSubFriends.FriendIds;
             sub.FriendsCount = subInfo.FriendsCount;
 
             return new CheckSubscriptionResultViewModel()
@@ -147,6 +143,7 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
                 IsFound = true,
                 IsChecked = true,
                 IsUpdated = true,
+                IsOut = false,
                 Subscription = sub
             };
         }

@@ -38,6 +38,8 @@ namespace Twitter_Telegram.Infrastructure.Services
 
                 try
                 {
+                    var isTimeOut = false;
+
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         var subscriptionService = scope.ServiceProvider.GetRequiredService<ISubscriptionService>();
@@ -49,6 +51,13 @@ namespace Twitter_Telegram.Infrastructure.Services
                         foreach (var sub in subs)
                         {
                             var twitterUser = await apiReader.GetUserInfoByUsernameAsync(sub.Username);
+
+                            if(twitterUser.IsOut)
+                            {
+                                isTimeOut = true;
+                                break;
+                            }
+
                             if (twitterUser == null)
                             {
                                 await subscriptionService.RemoveSubscriptionAsync(sub.Username);
@@ -71,6 +80,15 @@ namespace Twitter_Telegram.Infrastructure.Services
 
                     while (subs.Any())
                     {
+                        if (isTimeOut)
+                        {
+                            _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}: TIMEOUT!!!");
+                            _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}: TIMEOUT!!!");
+                            _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}: TIMEOUT!!!");
+                            await Task.Delay(TimeSpan.FromMinutes(15), stoppingToken);
+                            isTimeOut = false;
+                        }
+
                         using (var scope = _serviceProvider.CreateScope())
                         {
                             var subService = scope.ServiceProvider.GetRequiredService<ISubscriptionWorkerService>();
@@ -82,6 +100,13 @@ namespace Twitter_Telegram.Infrastructure.Services
 
                             foreach (var sub in updatedSubs)
                             {
+                                if (sub.IsOut)
+                                {
+                                    _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}: TimeOut: {updatedSubs.Count}, {sub.Subscription.Username}");
+                                    isTimeOut = true;
+                                    continue;
+                                }
+
                                 if (!sub.IsFound)
                                 {
                                     var subToRemove = subs.First(s => s.Username == sub.Subscription.Username);
@@ -98,6 +123,8 @@ namespace Twitter_Telegram.Infrastructure.Services
                                     //        await notifyService.SubscriptionRemovedAsync(user.Id, sub.Subscription.Username);
                                     //    }
                                     //}
+
+                                    _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}: Not found: {updatedSubs.Count}, {sub.Subscription.Username}");
 
                                     continue;
                                 }
@@ -125,7 +152,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                                $" Subscription worker: Checked {updatedSubs.Count} username. Subs Remain: {subs.Count}");
                         }
 
-                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                        //await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                     }
                 }
 

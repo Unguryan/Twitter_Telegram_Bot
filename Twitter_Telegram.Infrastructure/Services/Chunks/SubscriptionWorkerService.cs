@@ -24,10 +24,12 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
             {
                 var resVM = await _chunkWorkerService.CheckV2(subscription);
 
-                if (resVM.IsChecked)
-                {
-                    updatedSubs.Add(resVM);
-                }
+                updatedSubs.Add(resVM);
+
+                //if (resVM.IsChecked)
+                //{
+                //    updatedSubs.Add(resVM);
+                //}
             }
 
             //var chunks = await _chunkFactory.CreateChunksAsync(subs);

@@ -1,4 +1,5 @@
 ﻿using Twitter_Telegram.Domain.Models;
+using Twitter_Telegram.Domain.ViewModels;
 
 namespace Twitter_Telegram.App.Services
 {
@@ -6,10 +7,10 @@ namespace Twitter_Telegram.App.Services
     {
         //Task<List<long>?> GetUserFriendsByUsernameAsync(string username);
 
-        Task<List<long>?> GetUserFriendIdsByUsernameAsync(string username, int count);
+        Task<GetUserFriendIdsResultViewModel> GetUserFriendIdsByUsernameAsync(string username, int count);
 
-        Task<TwitterUser?> GetUserInfoByUserIdAsync(string userId);
+        Task<GetUserInfoResultViewModel> GetUserInfoByUserIdAsync(string userId);
 
-        Task<TwitterUser?> GetUserInfoByUsernameAsync(string username);
+        Task<GetUserInfoResultViewModel> GetUserInfoByUsernameAsync(string username);
     }
 }

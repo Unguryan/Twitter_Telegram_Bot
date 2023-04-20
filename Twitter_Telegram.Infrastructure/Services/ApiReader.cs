@@ -1,23 +1,27 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http.Headers;
 using Twitter_Telegram.App.Services;
 using Twitter_Telegram.Domain.Config;
 using Twitter_Telegram.Domain.Models;
+using Twitter_Telegram.Domain.ViewModels;
 
 namespace Twitter_Telegram.Infrastructure.Services
 {
     public class ApiReader : IApiReader
     {
         private readonly TwitterOptions _options;
+        private readonly ILogger _logger;
 
-        public ApiReader(IOptions<TwitterOptions> options)
+        public ApiReader(IOptions<TwitterOptions> options, ILogger<ApiReader> logger)
         {
             _options = options.Value;
+            _logger = logger;
         }
 
-        public async Task<List<long>?> GetUserFriendIdsByUsernameAsync(string username, int count)
+        public async Task<GetUserFriendIdsResultViewModel> GetUserFriendIdsByUsernameAsync(string username, int count)
         {
             if (count <= 5000)
             {
@@ -26,9 +30,32 @@ namespace Twitter_Telegram.Infrastructure.Services
 
                 if (string.IsNullOrEmpty(respStr))
                 {
-                    return null;
+                    return new GetUserFriendIdsResultViewModel()
+                    {
+                        IsOut = false,
+                        IsFound = false,
+                        FriendIds = null
+                    };
                 }
-                return ParseUserFriendIds(respStr);
+
+                if(respStr == "Too Many Requests")
+                {
+                    return new GetUserFriendIdsResultViewModel()
+                    {
+                        IsOut = true,
+                        IsFound = false,
+                        FriendIds = null
+                    };
+                }
+
+                var resList = ParseUserFriendIds(respStr);
+
+                return new GetUserFriendIdsResultViewModel()
+                {
+                    IsFound = true,
+                    IsOut = false,
+                    FriendIds = resList
+                };
             }
 
             long nextCursor = 0;
@@ -48,13 +75,28 @@ namespace Twitter_Telegram.Infrastructure.Services
                     break;
                 }
 
+                if (respStr == "Too Many Requests")
+                {
+                    return new GetUserFriendIdsResultViewModel()
+                    {
+                        IsOut = true,
+                        IsFound = false,
+                        FriendIds = null
+                    };
+                }
+
                 var data = ParseUserFriendIdsWithNextCursor(respStr, out nextCursor);
 
                 res.AddRange(data);
             }
             while (nextCursor != 0);
 
-            return res;
+            return new GetUserFriendIdsResultViewModel()
+            {
+                IsFound = true,
+                IsOut = false,
+                FriendIds = res
+            };
         }
 
         //public async Task<List<long>?> GetUserFriendsByUsernameAsync(string username)
@@ -69,19 +111,41 @@ namespace Twitter_Telegram.Infrastructure.Services
         //    return ParseUserFriends(respStr);
         //}
 
-        public async Task<TwitterUser?> GetUserInfoByUserIdAsync(string userId)
+        public async Task<GetUserInfoResultViewModel> GetUserInfoByUserIdAsync(string userId)
         {
             var url = string.Format(TwitterHelper.UserInfoByIdUrl, userId);
             var respStr = await SendRequestAsync(url);
 
             if (string.IsNullOrEmpty(respStr))
             {
-                return null;
+                return new GetUserInfoResultViewModel()
+                {
+                    IsOut = false,
+                    IsFound = false,
+                    TwitterUser = null
+                };
             }
-            return ParseUserData(respStr);
+
+            if (respStr == "Too Many Requests")
+            {
+                return new GetUserInfoResultViewModel()
+                {
+                    IsOut = true,
+                    IsFound = false,
+                    TwitterUser = null
+                };
+            }
+
+            var user = ParseUserData(respStr);
+            return new GetUserInfoResultViewModel()
+            {
+                IsOut = false,
+                IsFound = true,
+                TwitterUser = user
+            };
         }
 
-        public async Task<TwitterUser?> GetUserInfoByUsernameAsync(string username)
+        public async Task<GetUserInfoResultViewModel> GetUserInfoByUsernameAsync(string username)
         {
             await Task.Delay(TimeSpan.FromSeconds(1));
             var url = string.Format(TwitterHelper.UserInfoByUsernameUrl, username);
@@ -89,9 +153,31 @@ namespace Twitter_Telegram.Infrastructure.Services
 
             if (string.IsNullOrEmpty(respStr))
             {
-                return null;
+                return new GetUserInfoResultViewModel()
+                {
+                    IsOut = false,
+                    IsFound = false,
+                    TwitterUser = null
+                };
             }
-            return ParseUserData(respStr);
+
+            if (respStr == "Too Many Requests")
+            {
+                return new GetUserInfoResultViewModel()
+                {
+                    IsOut = true,
+                    IsFound = false,
+                    TwitterUser = null
+                };
+            }
+
+            var user = ParseUserData(respStr);
+            return new GetUserInfoResultViewModel()
+            {
+                IsOut = false,
+                IsFound = true,
+                TwitterUser = user
+            };
         }
 
         private async Task<string?> SendRequestAsync(string url)
@@ -110,15 +196,21 @@ namespace Twitter_Telegram.Infrastructure.Services
                     {
                         if (resp.ReasonPhrase == "Too Many Requests")
                         {
-                            await Task.Delay(TimeSpan.FromMinutes(15));
+                            _logger.LogError($"{DateTime.Now.ToShortTimeString()}:" + $"To Many Requests\n{url}");
+                            //await Task.Delay(TimeSpan.FromMinutes(15));
+                            return "Too Many Requests";
                         }
                         if (resp.ReasonPhrase == "Not Found")
                         {
+                            _logger.LogError($"{DateTime.Now.ToShortTimeString()}:" + $"NotFound\n{url}");
+                            _logger.LogError($"{url}");
                             return null;
                         }
                     }
                     else
                     {
+                        Console.WriteLine($"{DateTime.Now.ToShortTimeString()}:" + $"Success Read: {url}");
+                        _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}:" + $"Success Read: {url}");
                         return await resp.Content.ReadAsStringAsync();
                     }
                 }
