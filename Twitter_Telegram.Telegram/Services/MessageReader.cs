@@ -141,7 +141,13 @@ namespace Twitter_Telegram.Telegram.Services
 
             var twitterUser = await _apiReader.GetUserInfoByUsernameAsync(message);
 
-            if (twitterUser == null)
+            if (twitterUser.IsOut)
+            {
+                await SendTextMessageAsync(user.Id, $"API is Overloaded, try again in 15 min.");
+                return;
+            }
+
+            if (!twitterUser.IsFound)
             {
                 await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist.");
                 return;
@@ -150,7 +156,7 @@ namespace Twitter_Telegram.Telegram.Services
             using (var scope = _serviceProvider.CreateScope())
             {
                 var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
-                await userService.ChangeUserTempDataAsync(user.Id, twitterUser.Username);
+                await userService.ChangeUserTempDataAsync(user.Id, twitterUser.TwitterUser.Username);
                 await userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
             }
 
