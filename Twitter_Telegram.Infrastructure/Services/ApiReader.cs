@@ -255,8 +255,8 @@ namespace Twitter_Telegram.Infrastructure.Services
             {
                 var url = $"https://api.twitter.com/oauth2/token?grant_type=client_credentials";
 
-                var key = "yoGNbUTC7D62eHh5hIfZQzNIM";
-                var secret = "tlX1ImE8qkOUvUNLRmB7es9ETCjw5IkIluUHfJjB4HzAyUX4c3";
+                var key = "KEY";
+                var secret = "KEY";
                 //var token = "AAAAAAAAAAAAAAAAAAAAAOsjnAEAAAAAQvI%2F5OckpxPqgwDguks8K%2FEXplQ%3DiLQBs7XQSsSRmwNnIgEfQOUzT0OVLWaiLKJ036U6ioCvoIccng";
                     
                 var basic = Base64Encode($"{key}:{secret}");
