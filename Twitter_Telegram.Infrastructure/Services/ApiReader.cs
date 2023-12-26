@@ -257,7 +257,6 @@ namespace Twitter_Telegram.Infrastructure.Services
 
                 var key = "KEY";
                 var secret = "KEY";
-                //var token = "AAAAAAAAAAAAAAAAAAAAAOsjnAEAAAAAQvI%2F5OckpxPqgwDguks8K%2FEXplQ%3DiLQBs7XQSsSRmwNnIgEfQOUzT0OVLWaiLKJ036U6ioCvoIccng";
                     
                 var basic = Base64Encode($"{key}:{secret}");
 
