@@ -8,6 +8,13 @@
         
         public static string UserFriendIdsByUsernameUrl => "https://api.twitter.com/1.1/friends/ids.json?screen_name={0}";
 
-        //public static string UserIFriendsByUsernameUrl => "https://api.twitter.com/1.1/friends/list.json?cursor=-1&screen_name={0}&skip_status=true&include_user_entities=false";
+
+        public static string UserInfoByIdUrlV2 => "https://twitter135.p.rapidapi.com/v1.1/Users/?ids={0}";
+
+        public static string UserInfoByUsernameUrlV2 => "https://twitter135.p.rapidapi.com/v1.1/Users/?usernames={0}";
+
+        public static string UserFriendIdsByUsernameUrlV2 => "https://twitter135.p.rapidapi.com/v1.1/FollowingIds/?username={0}&count={1}";
+        public static string UserFriendIdsWithCountByUsernameUrlV2 => "https://twitter135.p.rapidapi.com/v1.1/FollowingIds/?username={0}&count={1}";
+
     }
 }

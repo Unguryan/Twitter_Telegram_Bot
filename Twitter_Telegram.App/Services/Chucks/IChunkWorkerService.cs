@@ -7,6 +7,7 @@ namespace Twitter_Telegram.App.Services.Chucks
     {
         //Task<List<Subscription>?> CheckChunkV2(ChunkViewModel chunk);
 
-        Task<CheckSubscriptionResultViewModel?> CheckV2(Subscription sub);
+        //Task<CheckSubscriptionResultViewModel?> Check(Subscription sub);
+        Task<List<CheckSubscriptionResultViewModel>?> CheckV2(List<Subscription> subs, List<GetUsersInfoResultViewModel> users);
     }
 }

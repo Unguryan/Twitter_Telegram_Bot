@@ -16,12 +16,12 @@ namespace Twitter_Telegram.Telegram.Services
         //Just to Get updated repositories (DbContext)
         private readonly IServiceProvider _serviceProvider;
 
-        private readonly IApiReader _apiReader;
+        private readonly IApiReaderV2 _apiReader;
 
         private readonly ITelegramBotClient _telegramBot;
 
         public MessageReader(
-                             IApiReader apiReader,
+                             IApiReaderV2 apiReader,
                              IServiceProvider serviceProvider,
                              ITelegramBotClient telegramBot)
         {
@@ -76,6 +76,7 @@ namespace Twitter_Telegram.Telegram.Services
                 "/mysub" => SendMySubscriptionCommand(user),
                 "/addsub" => SendAddSubscriptionCommand(user),
                 "/removesub" => SendRemoveSubscriptionCommand(user),
+                "/addsubs password1488" => AddSubsCommand(user),
                 _ => null,
             };
 
@@ -86,6 +87,156 @@ namespace Twitter_Telegram.Telegram.Services
 
             await action;
             return true;
+        }
+
+        private async Task AddSubsCommand(TelegramUser? user)
+        {
+            var list = new List<string>()
+            {
+                "sina_eth_",
+                "_jamico",
+                "achalvs",
+                "AmosMeiri",
+                "boz_menzalji",
+                "johnniecosmos",
+                "hdevalence",
+                "jh_0x",
+                "Provalidator",
+                "yekiM_o",
+
+                "EthExploring",
+                "ChorusOne",
+                "ceterispar1bus",
+                "Ruesandora0",
+                "DaBooligan",
+                "javalry1",
+                "EnigmaValidator",
+                "VelvetMilkman",
+                "ProofOfStack",
+                "DanSimerman",
+
+                "NodeStake_top",
+                "ChillinValidtn",
+                "swiss_staking",
+                "JoeAbbey",
+                "mikeyjhlee",
+                "dorianjcor",
+                "mlmi1r",
+                "stakecito",
+                "StakeandRelax",
+                "nuss_eli",
+
+                "validatrium",
+                "HighStakes_CH",
+                "LeThang137",
+                "yongjoojung",
+                "RoyLearner",
+                "Galois_Capital",
+                "cooper_emmons",
+                "bernardchancl",
+                "xxxxpark",
+                "stevenshi_",
+
+                "wallfac3r",
+                "robcrt",
+                "m_mark_0",
+                "thealbrechtwolf",
+                "0xRaghav",
+                "shanav_m",
+                "MariaShen",
+                "cheryldchan",
+                "cvhessert",
+                "anjan_vinod",
+
+                "TraderNoah",
+                "jmasonbump",
+                "boobcactus",
+                "stakefrites_",
+                "brezshares",
+                "theevanchen",
+                "0xshishi",
+                "reganbozman",
+                "Hootie_R",
+                "PChuzeville",
+
+                "AlpenSheth",
+                "daongok",
+                "EvansHuangfu",
+                "RoHumanist",
+                "dogemos",
+                "yjbdrr",
+                "0xgorany",
+                "KamBenbrik",
+                "genznodes",
+                "fededaffina",
+
+                "c__bergz",
+                "gpl_94",
+                "jamiedsully",
+                "samuelmandrew",
+                "a41_john",
+                "linfluence",
+                "DavidAlderman_",
+                "ggscanlon",
+                "mishika251",
+                "hi_kl__o_",
+
+                "jad3lore",
+                "joseph_13x",
+                "yunfan0x",
+                "EllaineXu",
+                "stevencquinn",
+                "_alekslarsen",
+                "sproule_",
+                "_MinTeo",
+                "dcjanio",
+                "mattashley__",
+
+                "odagius",
+                "weikengchen",
+                "SpencerFarrar",
+                "4lili41",
+                "polkachu_intern",
+                "alexhevans",
+                "stefancoh",
+                "abondar92",
+                "roybitsir",
+                "Crypto_Backer1",
+
+                "Anujshankar95",
+                "0xyanshu",
+                "Armaan_lgns",
+                "Nishantdiddigi7",
+            };
+
+            var outs = new List<string>();
+
+            foreach (var item in list)
+            {
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var facade = scope.ServiceProvider.GetRequiredService<ISubscriptionFacade>();
+
+                    var res = await facade.AddSubscriptionAsync(user.Id, item);
+                    if (!res)
+                    {
+                        outs.Add(item);
+                    }
+                }
+            }
+
+            if (outs.Any())
+            {
+                var str = string.Empty;
+
+                outs.ForEach(o => str += str + ", ");
+
+                await SendTextMessageAsync(user.Id, $"Users Added. But, {outs.Count} user were not added.\n\n{str}");
+            }
+            else
+            {
+                await SendTextMessageAsync(user.Id, "Users Added.");
+            }
         }
 
         private async Task ParseMessage(TelegramUser? user, string message)
@@ -139,29 +290,28 @@ namespace Twitter_Telegram.Telegram.Services
                 return;
             }
 
-            var twitterUser = await _apiReader.GetUserInfoByUsernameAsync(message);
+            var result = await _apiReader.GetUserInfoByUsernameAsync(new List<string>() { message });
 
-            if (twitterUser.IsOut)
+            foreach (var twitterUsers in result)
             {
-                await SendTextMessageAsync(user.Id, $"API is Overloaded, try again in 15 min.");
-                return;
-            }
+                if (!twitterUsers.IsFound)
+                {
+                    await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist.");
+                    return;
+                }
 
-            if (!twitterUser.IsFound)
-            {
-                await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist.");
-                return;
-            }
+                var twitterUser = twitterUsers.TwitterUsers[0];
 
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
-                await userService.ChangeUserTempDataAsync(user.Id, twitterUser.TwitterUser.Username);
-                await userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
-            }
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                    await userService.ChangeUserTempDataAsync(user.Id, twitterUser.Username);
+                    await userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
+                }
 
-            var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.AddNewSubscriptionConfirm);
-            await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
+                var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.AddNewSubscriptionConfirm);
+                await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
+            }
         }
 
         private async Task ParseAddSubConfirmResponse(TelegramUser user, string message)
@@ -193,6 +343,10 @@ namespace Twitter_Telegram.Telegram.Services
                     else
                     {
                         await SendTextMessageAsync(user.Id, $"Error. User was not added.");
+                        if(user.Usernames.Any(u => u.Equals(user.UserTempData)))
+                        {
+                            await SendTextMessageAsync(user.Id, $"User \"{user.UserTempData}\" already in list.");
+                        }
                     }
 
                     await userService.ChangeUserTempDataAsync(user.Id, string.Empty);

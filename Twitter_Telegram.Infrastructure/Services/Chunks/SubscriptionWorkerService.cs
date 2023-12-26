@@ -16,19 +16,25 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
             _chunkWorkerService = chunkWorkerService;
         }
 
-        public async Task<List<CheckSubscriptionResultViewModel>> CheckSubscriptions(List<Subscription> subs, CancellationToken cancellationToken)
+        public async Task<List<CheckSubscriptionResultViewModel>?> CheckSubscriptions(List<Subscription> subs, List<GetUsersInfoResultViewModel> users, CancellationToken cancellationToken)
         {
-            var updatedSubs = new List<CheckSubscriptionResultViewModel>();
+            //var updatedSubs = new List<CheckSubscriptionResultViewModel>();
                 
-            foreach (var subscription in subs)
-            {
-                var resVM = await _chunkWorkerService.CheckV2(subscription);
+            //foreach (var subscription in subs)
+            //{
+            //    var resVM = await _chunkWorkerService.CheckV2(subscription);
 
-                updatedSubs.Add(resVM);
+            //    if(resVM != null)
+            //    {
+            //        updatedSubs.Add(resVM);
+            //        if (resVM.IsOut)
+            //        {
+            //            break;
+            //        }
+            //    }
+            //}
 
-            }
-
-            return updatedSubs;
+            return await _chunkWorkerService.CheckV2(subs, users);
         }
     }
 }

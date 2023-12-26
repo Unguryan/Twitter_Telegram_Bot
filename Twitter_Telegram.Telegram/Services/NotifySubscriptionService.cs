@@ -4,6 +4,9 @@ using Telegram.Bot.Types;
 using Twitter_Telegram.App.Services;
 using Twitter_Telegram.App.Services.Telegram;
 using Twitter_Telegram.Domain.Models;
+using System.Text;
+using System.Collections.Generic;
+using System.Drawing;
 
 namespace Twitter_Telegram.Infrastructure.Services
 {
@@ -11,9 +14,9 @@ namespace Twitter_Telegram.Infrastructure.Services
     {
         private readonly ITelegramBotClient _client;
         private readonly ITelegramUserService _userService;
-        private readonly IApiReader _apiReader;
+        private readonly IApiReaderV2 _apiReader;
 
-        public NotifySubscriptionService(ITelegramBotClient client, ITelegramUserService userService, IApiReader apiReader)
+        public NotifySubscriptionService(ITelegramBotClient client, ITelegramUserService userService, IApiReaderV2 apiReader)
         {
             _client = client;
             _userService = userService;
@@ -26,32 +29,53 @@ namespace Twitter_Telegram.Infrastructure.Services
 
             var friends = new List<TwitterUser>();
 
-            foreach (var friendId in updatedFriends)
+            while (true)
             {
-                while (true)
-                {
-                    var user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
+                var result = await _apiReader.GetUserInfoByUserIdAsync(updatedFriends.Select(u => u.ToString()).ToList());
 
-                    if (user.IsOut)
+                foreach (var res in result)
+                {
+                    if (res.IsOut)
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(15));
+                        await Task.Delay(TimeSpan.FromMinutes(15));
                         continue;
                     }
 
-                    if (!user.IsFound)
-                    {
-                        break;
-                    }
-
-                    friends.Add(user.TwitterUser);
-                    break;
+                    friends.AddRange(res.TwitterUsers);
                 }
+
+                break;
             }
+
+            //foreach (var friendId in updatedFriends)
+            //{
+            //    while (true)
+            //    {
+            //        var user = await _apiReader.GetUserInfoByUserIdAsync(friendId.ToString());
+
+            //        if (user.IsOut)
+            //        {
+            //            await Task.Delay(TimeSpan.FromMinutes(15));
+            //            continue;
+            //        }
+
+            //        if (!user.IsFound)
+            //        {
+            //            break;
+            //        }
+
+            //        friends.Add(user.TwitterUser);
+            //        break;
+            //    }
+            //}
 
             foreach (var userId in users.Select(u => u.Id))
             {
-                var message = CreateMessage(subUsername, friends.Select(f => f.Username).ToList());
-                await SendTextMessageAsync(userId, message);
+                var messages = CreateMessage(subUsername, friends.Select(f => f.Username).ToList());
+                foreach (var message in messages)
+                {
+                    await SendTextMessageAsync(userId, message);
+                }
             }
         }
 
@@ -67,15 +91,53 @@ namespace Twitter_Telegram.Infrastructure.Services
                   $"Sub: <a href='https://twitter.com/{userName}'>{userName}</a> was not found. REMOVED!";
         }
 
-        private string CreateMessage(string subUsername, List<string> userNames)
+        private List<string> CreateMessage(string subUsername, List<string> userNames)
         {
-            var subMessage = "";
-            userNames.ForEach(u =>
-                subMessage += $"New following: <a href='https://twitter.com/{u}'>{u}</a>\n"
-            );
-            return "<b>New following!</b>\n\n" +
-                  $"Sub: <a href='https://twitter.com/{subUsername}'>{subUsername}</a>\n\n" +
-                  subMessage;
+            var result = new List<string>();
+            var subMessage = new StringBuilder();
+
+            for (int i = 0; i < userNames.Count; i += 40)
+            {
+                var chunk = new string[Math.Min(40, userNames.Count - i)];
+                Array.Copy(userNames.ToArray(), i, chunk, 0, chunk.Length);
+
+                var message = "<b>New following!</b>\n\n" +
+                       $"Sub: <a href='https://twitter.com/{subUsername}'>{subUsername}</a>\n\n";
+                subMessage.Append(message);
+
+                for (int j = 0; j < chunk.Length; j++)
+                {
+                    subMessage.Append($"{(j + 1)}. New following: <a href='https://twitter.com/{chunk[j]}'>{chunk[j]}</a>\n");
+                }
+
+                result.Add(subMessage.ToString());
+                subMessage.Clear();
+            }
+
+            //var isInit = false;
+            //var counter = 0;
+            //foreach (var userName in userNames)
+            //{
+            //    if (!isInit)
+            //    {
+            //        var message = "<b>New following!</b>\n\n" +
+            //           $"Sub: <a href='https://twitter.com/{subUsername}'>{subUsername}</a>\n\n";
+            //        subMessage.Append(message);
+            //        isInit = true;
+            //    }
+
+            //    if(counter == 40)
+            //    {
+            //        result.Add(subMessage.ToString());
+            //        isInit = false;
+            //        counter = 0;
+            //        subMessage.Clear();
+            //    }
+
+            //    subMessage.Append($"{++counter}. New following: <a href='https://twitter.com/{userName}'>{userName}</a>\n");
+            //}
+
+            return result;
         }
 
         private async Task SendTextMessageAsync(long userId, string message)

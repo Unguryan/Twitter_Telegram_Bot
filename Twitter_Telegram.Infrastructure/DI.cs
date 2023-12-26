@@ -17,15 +17,17 @@ namespace Twitter_Telegram.Infrastructure
             services.AddAssembly(configuration);
 
             services.AddScoped<IApiReader, ApiReader>();
+            services.AddScoped<IApiReaderV2, ApiReaderV2>();
 
             services.AddScoped<IChunkFactory, ChunkFactory>();
             services.AddScoped<IChunkWorkerService, ChunkWorkerService>();
             services.AddScoped<ISubscriptionWorkerService, SubscriptionWorkerService>();
 
-            services.AddScoped<IApiReader, ApiReader>();
+            //services.AddScoped<IApiReader, ApiReader>();
             services.AddScoped<ITelegramUserService, TelegramUserService>();
             services.AddScoped<ISubscriptionService, SubscriptionService>();
             services.AddScoped<ISubscriptionFacade, SubscriptionFacade>();
+            services.AddScoped<ITwitterSettingsWriter, TwitterSettingsWriter>();
 
             services.AddHostedService<SubscriptionBackgroundService>();
         }

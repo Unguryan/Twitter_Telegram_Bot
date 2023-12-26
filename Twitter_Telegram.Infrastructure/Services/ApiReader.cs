@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using Twitter_Telegram.App.Services;
 using Twitter_Telegram.Domain.Config;
 using Twitter_Telegram.Domain.Models;
@@ -14,11 +15,13 @@ namespace Twitter_Telegram.Infrastructure.Services
     {
         private readonly TwitterOptions _options;
         private readonly ILogger _logger;
+        private readonly ITwitterSettingsWriter _settingsWriter;
 
-        public ApiReader(IOptions<TwitterOptions> options, ILogger<ApiReader> logger)
+        public ApiReader(IOptions<TwitterOptions> options, ILogger<ApiReader> logger, ITwitterSettingsWriter settingsWriter)
         {
             _options = options.Value;
             _logger = logger;
+            _settingsWriter = settingsWriter;
         }
 
         public async Task<GetUserFriendIdsResultViewModel> GetUserFriendIdsByUsernameAsync(string username, int count)
@@ -192,6 +195,14 @@ namespace Twitter_Telegram.Infrastructure.Services
                             _logger.LogError($"{DateTime.Now.ToShortTimeString()}:" + $"NotFound\n{url}");
                             return null;
                         }
+                        if (resp.ReasonPhrase == "Unauthorized" ||
+                            (resp.ReasonPhrase == "Bad Request" && string.IsNullOrEmpty(_options.Token)))
+                        {
+                            var newToken = await GetTokenAsync();
+                            await _settingsWriter.UpdateTwitterToken(newToken);
+
+                            _options.Token = newToken;
+                        }
                     }
                     else
                     {
@@ -236,6 +247,49 @@ namespace Twitter_Telegram.Infrastructure.Services
             nextCursor = (long)jObj["next_cursor"];
 
             return jArray.Select(j => long.Parse(j.ToString())).ToList();
+        }
+
+        private async Task<string> GetTokenAsync()
+        {
+            using (var client = new HttpClient())
+            {
+                var url = $"https://api.twitter.com/oauth2/token?grant_type=client_credentials";
+
+                var key = "yoGNbUTC7D62eHh5hIfZQzNIM";
+                var secret = "tlX1ImE8qkOUvUNLRmB7es9ETCjw5IkIluUHfJjB4HzAyUX4c3";
+                //var token = "AAAAAAAAAAAAAAAAAAAAAOsjnAEAAAAAQvI%2F5OckpxPqgwDguks8K%2FEXplQ%3DiLQBs7XQSsSRmwNnIgEfQOUzT0OVLWaiLKJ036U6ioCvoIccng";
+                    
+                var basic = Base64Encode($"{key}:{secret}");
+
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Basic", basic);
+
+                var bodyStr = "{\"grant_type\": \"client_credentials\"}";
+                var body = new StringContent(bodyStr);
+
+                var resp = await client.PostAsync(url, body);
+
+                string token = string.Empty;
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    return token;
+                }
+
+                var respStr = await resp.Content.ReadAsStringAsync();
+
+                var obj = JObject.Parse(respStr);
+
+                token = (string)obj["access_token"] ?? string.Empty;
+
+                _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}:" + $"NEW TOKEN: {token}");
+                return token;
+            }
+        }
+        private string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return Convert.ToBase64String(plainTextBytes);
         }
     }
 }

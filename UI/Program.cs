@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Twitter_Telegram.EF_Core;
 using Twitter_Telegram.EF_Core.Context;
 using Twitter_Telegram.Infrastructure;
@@ -20,6 +21,9 @@ builder.ConfigureServices(services =>
     services.AddEF_Core(config);
     services.AddInfrastructure(config);
     services.AddTelegram(config);
+
+    services.AddSingleton<ILoggerFactory, LoggerFactory>();
+    services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 });
 
 var host = builder.Build();

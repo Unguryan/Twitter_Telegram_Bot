@@ -9,102 +9,151 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
     public class ChunkWorkerService : IChunkWorkerService
     {
         private readonly INotifySubscriptionService _notifySubscriptionService;
-        private readonly IApiReader _apiReader;
+        private readonly IApiReaderV2 _apiReader;
 
         public ChunkWorkerService(
                                   INotifySubscriptionService notifySubscriptionService,
-                                  IApiReader apiReader)
+                                  IApiReaderV2 apiReader)
         {
             _notifySubscriptionService = notifySubscriptionService;
             _apiReader = apiReader;
         }
 
-        public async Task<CheckSubscriptionResultViewModel> CheckV2(Subscription sub)
+        public async Task<List<CheckSubscriptionResultViewModel>?> CheckV2(List<Subscription> subs, List<GetUsersInfoResultViewModel> users)
         {
-            var subInfo = await _apiReader.GetUserInfoByUsernameAsync(sub.Username);
+            var resultList = new List<CheckSubscriptionResultViewModel>();
 
-            if (subInfo.IsOut)
+            foreach (var subInfos in users)
             {
-                return new CheckSubscriptionResultViewModel()
+                //if (!subInfos.IsOut)
+                //{
+                //    return null;
+                //}
+
+                if (subInfos.IsOut)
                 {
-                    IsOut = true,
-                    Subscription = sub,
-                    IsFound = false,
-                    IsChecked = false,
-                };
-            }
+                    return new List<CheckSubscriptionResultViewModel>() {
+                        new CheckSubscriptionResultViewModel()
+                        {
+                            IsOut = true,
+                            Subscription = null,
+                            IsFound = false,
+                            IsChecked = false,
+                        }
+                    };
+                }
 
-            if (!subInfo.IsFound && !subInfo.IsOut)
-            {
-                return new CheckSubscriptionResultViewModel()
+                foreach (var sub in subs)
                 {
-                    IsOut = false,
-                    Subscription = sub,
-                    IsFound = false,
-                    IsChecked = true
-                };
+                    var subInfo = subInfos.TwitterUsers.FirstOrDefault(u => u.Username == sub.Username);
+
+                    if (subInfo == null)
+                    {
+                        var notFound = new CheckSubscriptionResultViewModel()
+                        {
+                            IsOut = false,
+                            Subscription = sub,
+                            IsFound = false,
+                            IsChecked = true
+                        };
+
+                        resultList.Add(notFound);
+                        continue;
+                    }
+
+                    if (!sub.IsInit)
+                    {
+                        var initSub = await InitSubcription(sub, subInfo);
+                        resultList.Add(initSub);
+                        continue;
+                    }
+
+                    if (sub.FriendsCount == subInfo.FriendsCount)
+                    {
+                        var checkedUser = new CheckSubscriptionResultViewModel()
+                        {
+                            IsFound = true,
+                            IsChecked = true,
+                            IsUpdated = false,
+                            IsOut = false,
+                            Subscription = sub
+                        };
+
+                        resultList.Add(checkedUser);
+                        continue;
+                    }
+
+                    var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.FriendsCount);
+
+                    if (updatedSubFriends.IsOut)
+                    {
+                        var isOut = new CheckSubscriptionResultViewModel()
+                        {
+                            IsOut = true,
+                            IsFound = false,
+                            IsChecked = false,
+                            IsUpdated = false,
+                            Subscription = sub
+                        };
+
+                        resultList.Add(isOut);
+                        continue;
+                    }
+
+                    if (updatedSubFriends.IsAuthError)
+                    {
+                        var isAuth = new CheckSubscriptionResultViewModel()
+                        {
+                            IsOut = false,
+                            IsFound = true,
+                            IsChecked = false,
+                            IsUpdated = false,
+                            Subscription = sub
+                        };
+
+                        resultList.Add(isAuth);
+                        continue;
+                    }
+
+                    if (!updatedSubFriends.IsFound && !updatedSubFriends.IsOut)
+                    {
+                        var notFound = new CheckSubscriptionResultViewModel()
+                        {
+                            IsFound = false,
+                            IsChecked = false,
+                            IsUpdated = false,
+                            IsOut = false,
+                            Subscription = sub
+                        };
+
+                        resultList.Add(notFound);
+                        continue;
+                    }
+
+                    var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends.FriendIds);
+                    if (newSubs.Any())
+                    {
+                        await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
+                    }
+
+                    sub.Friends = updatedSubFriends.FriendIds;
+                    sub.FriendsCount = subInfo.FriendsCount;
+
+                    var updated = new CheckSubscriptionResultViewModel()
+                    {
+                        IsFound = true,
+                        IsChecked = true,
+                        IsUpdated = true,
+                        IsOut = false,
+                        Subscription = sub
+                    };
+
+                    resultList.Add(updated);
+                }
+
             }
 
-            if (!sub.IsInit)
-            {
-                return await InitSubcription(sub, subInfo.TwitterUser);
-            }
-
-            if(sub.FriendsCount == subInfo.TwitterUser.FriendsCount)
-            {
-                return new CheckSubscriptionResultViewModel()
-                {
-                    IsFound = true,
-                    IsChecked = true,
-                    IsUpdated = false,
-                    IsOut = false,
-                    Subscription = sub
-                };
-            }
-
-            var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.TwitterUser.FriendsCount);
-
-            if (updatedSubFriends.IsOut)
-            {
-                return new CheckSubscriptionResultViewModel()
-                {
-                    IsOut = true,
-                    IsFound = false,
-                    IsChecked = false,
-                    IsUpdated = false,
-                    Subscription = sub
-                };
-            }
-
-            if (!updatedSubFriends.IsFound && !updatedSubFriends.IsOut)
-            {
-                return new CheckSubscriptionResultViewModel()
-                {
-                    IsFound = true,
-                    IsChecked = false,
-                    IsUpdated = false,
-                    IsOut = false,
-                    Subscription = sub
-                };
-            }
-
-            var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends.FriendIds);
-            if (newSubs.Any())
-            {
-                await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
-            }
-
-            sub.Friends = updatedSubFriends.FriendIds;
-            sub.FriendsCount = subInfo.TwitterUser.FriendsCount;
-
-            return new CheckSubscriptionResultViewModel()
-            {
-                IsFound = true,
-                IsChecked = true,
-                IsUpdated = true,
-                IsOut = false,
-                Subscription = sub
-            };
+            return resultList;
         }
 
         private async Task<CheckSubscriptionResultViewModel> InitSubcription(Subscription sub, TwitterUser subInfo)
@@ -117,6 +166,18 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
                 {
                     IsOut = true,
                     IsFound = false,
+                    IsChecked = false,
+                    IsUpdated = false,
+                    Subscription = sub
+                };
+            }
+
+            if (updatedSubFriends.IsAuthError)
+            {
+                return new CheckSubscriptionResultViewModel()
+                {
+                    IsOut = false,
+                    IsFound = true,
                     IsChecked = false,
                     IsUpdated = false,
                     Subscription = sub
@@ -162,5 +223,93 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
 
             return newSubs;
         }
+
+        //public async Task<CheckSubscriptionResultViewModel?> Check(Subscription sub)
+        //{
+        //    var subInfo = await _apiReader.GetUserInfoByUsernameAsync(sub.Username);
+
+        //    if (subInfo.IsOut)
+        //    {
+        //        return new CheckSubscriptionResultViewModel()
+        //        {
+        //            IsOut = true,
+        //            Subscription = sub,
+        //            IsFound = false,
+        //            IsChecked = false,
+        //        };
+        //    }
+
+        //    if (!subInfo.IsFound && !subInfo.IsOut)
+        //    {
+        //        return new CheckSubscriptionResultViewModel()
+        //        {
+        //            IsOut = false,
+        //            Subscription = sub,
+        //            IsFound = false,
+        //            IsChecked = true
+        //        };
+        //    }
+
+        //    if (!sub.IsInit)
+        //    {
+        //        return await InitSubcription(sub, subInfo.TwitterUser);
+        //    }
+
+        //    if (sub.FriendsCount == subInfo.TwitterUser.FriendsCount)
+        //    {
+        //        return new CheckSubscriptionResultViewModel()
+        //        {
+        //            IsFound = true,
+        //            IsChecked = true,
+        //            IsUpdated = false,
+        //            IsOut = false,
+        //            Subscription = sub
+        //        };
+        //    }
+
+        //    var updatedSubFriends = await _apiReader.GetUserFriendIdsByUsernameAsync(sub.Username, subInfo.TwitterUser.FriendsCount);
+
+        //    if (updatedSubFriends.IsOut)
+        //    {
+        //        return new CheckSubscriptionResultViewModel()
+        //        {
+        //            IsOut = true,
+        //            IsFound = false,
+        //            IsChecked = false,
+        //            IsUpdated = false,
+        //            Subscription = sub
+        //        };
+        //    }
+
+        //    if (!updatedSubFriends.IsFound && !updatedSubFriends.IsOut)
+        //    {
+        //        return new CheckSubscriptionResultViewModel()
+        //        {
+        //            IsFound = true,
+        //            IsChecked = false,
+        //            IsUpdated = false,
+        //            IsOut = false,
+        //            Subscription = sub
+        //        };
+        //    }
+
+        //    var newSubs = await CheckSubscription(sub.Friends, updatedSubFriends.FriendIds);
+        //    if (newSubs.Any())
+        //    {
+        //        await _notifySubscriptionService.NotifyUsersAsync(sub.Username, newSubs);
+        //    }
+
+        //    sub.Friends = updatedSubFriends.FriendIds;
+        //    sub.FriendsCount = subInfo.TwitterUser.FriendsCount;
+
+        //    return new CheckSubscriptionResultViewModel()
+        //    {
+        //        IsFound = true,
+        //        IsChecked = true,
+        //        IsUpdated = true,
+        //        IsOut = false,
+        //        Subscription = sub
+        //    };
+        //}
     }
 }

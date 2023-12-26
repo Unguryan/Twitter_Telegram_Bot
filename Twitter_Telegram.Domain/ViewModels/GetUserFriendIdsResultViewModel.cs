@@ -6,6 +6,8 @@
 
         public bool IsFound { get; set; }
 
+        public bool IsAuthError { get; set; }
+
         public List<long>? FriendIds { get; set; }
     }
 }
