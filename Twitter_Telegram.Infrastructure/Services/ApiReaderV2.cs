@@ -242,8 +242,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                         RequestUri = new Uri(url),
                         Headers =
                             {
-                                //{ "X-RapidAPI-Key", "32e064ac12mshcdf633ea2be37ffp15daeejsnb920ca2a8456" },
-                                { "X-RapidAPI-Key", "KEY" },
+                                { "X-RapidAPI-Key", "Key" },
                                 { "X-RapidAPI-Host", "twitter135.p.rapidapi.com" },
                             },
                     };
