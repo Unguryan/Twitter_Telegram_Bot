@@ -227,11 +227,21 @@ namespace Twitter_Telegram.Telegram.Services
 
             if (outs.Any())
             {
-                var str = string.Empty;
+                //var str = string.Empty;
 
-                outs.ForEach(o => str += str + ", ");
+                //outs.ForEach(o => str += str + ", ");
 
-                await SendTextMessageAsync(user.Id, $"Users Added. But, {outs.Count} user were not added.\n\n{str}");
+                var sb = new StringBuilder();
+
+                foreach (var item in outs)
+                {
+                    if (!string.IsNullOrEmpty(item))
+                    {
+                        sb.AppendLine(item);
+                    }
+                }
+
+                await SendTextMessageAsync(user.Id, $"Users Added. But, {outs.Count} user were not added.\n\n{sb.ToString()}");
             }
             else
             {
