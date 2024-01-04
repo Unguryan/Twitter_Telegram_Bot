@@ -203,10 +203,10 @@ namespace Twitter_Telegram.Telegram.Services
                 "roybitsir",
                 "Crypto_Backer1",
 
-                "Anujshankar95",
+                "anujshankar95",
                 "0xyanshu",
-                "Armaan_lgns",
-                "Nishantdiddigi7",
+                "armaan_lgns",
+                "nishantdiddigi7",
             };
 
             var outs = new List<string>();
