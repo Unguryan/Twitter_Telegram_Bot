@@ -290,28 +290,24 @@ namespace Twitter_Telegram.Telegram.Services
                 return;
             }
 
-            var result = await _apiReader.GetUserInfoByUsernameAsync(new List<string>() { message });
-
-            foreach (var twitterUsers in result)
+            var twitterUsers = await _apiReader.GetUserInfoByUsernameAsync(new List<string>() { message });
+            if (!twitterUsers.IsFound)
             {
-                if (!twitterUsers.IsFound)
-                {
-                    await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist.");
-                    return;
-                }
-
-                var twitterUser = twitterUsers.TwitterUsers[0];
-
-                using (var scope = _serviceProvider.CreateScope())
-                {
-                    var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
-                    await userService.ChangeUserTempDataAsync(user.Id, twitterUser.Username);
-                    await userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
-                }
-
-                var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.AddNewSubscriptionConfirm);
-                await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
+                await SendTextMessageAsync(user.Id, $"User <b>{message}</b> does not exist.");
+                return;
             }
+
+            var twitterUser = twitterUsers.TwitterUsers[0];
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var userService = scope.ServiceProvider.GetRequiredService<ITelegramUserService>();
+                await userService.ChangeUserTempDataAsync(user.Id, twitterUser.Username);
+                await userService.ChangeUserStateAsync(user.Id, TelegramUserState.AddNewSubscriptionConfirm);
+            }
+
+            var messageVM = TelegramStateHelper.GetTelegramState(TelegramUserState.AddNewSubscriptionConfirm);
+            await SendTextMessageAsync(user.Id, string.Format(messageVM.Message, message), messageVM.Keyboard);
         }
 
         private async Task ParseAddSubConfirmResponse(TelegramUser user, string message)
@@ -343,7 +339,7 @@ namespace Twitter_Telegram.Telegram.Services
                     else
                     {
                         await SendTextMessageAsync(user.Id, $"Error. User was not added.");
-                        if(user.Usernames.Any(u => u.Equals(user.UserTempData)))
+                        if (user.Usernames.Any(u => u.Equals(user.UserTempData)))
                         {
                             await SendTextMessageAsync(user.Id, $"User \"{user.UserTempData}\" already in list.");
                         }

@@ -16,7 +16,7 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
             _chunkWorkerService = chunkWorkerService;
         }
 
-        public async Task<List<CheckSubscriptionResultViewModel>?> CheckSubscriptions(List<Subscription> subs, List<GetUsersInfoResultViewModel> users, CancellationToken cancellationToken)
+        public async Task<List<CheckSubscriptionResultViewModel>?> CheckSubscriptions(List<Subscription> subs, GetUsersInfoResultViewModel users, CancellationToken cancellationToken)
         {
             //var updatedSubs = new List<CheckSubscriptionResultViewModel>();
                 

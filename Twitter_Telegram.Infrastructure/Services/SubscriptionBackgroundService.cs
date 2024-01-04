@@ -37,7 +37,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                 await Task.Delay(timeout, stoppingToken);
 
                 var subs = new List<Subscription>();
-                var twitterUsers = new List<GetUsersInfoResultViewModel>();
+                var twitterUsers = new GetUsersInfoResultViewModel();
 
                 try
                 {
@@ -53,42 +53,41 @@ namespace Twitter_Telegram.Infrastructure.Services
                         subs = await subscriptionService.GetSubscriptionsAsync();
                         //test(subs);
 
-                        if(subs.Count == 0)
+                        if (subs.Count == 0)
                         {
                             continue;
                         }
 
                         twitterUsers = await apiReader.GetUserInfoByUsernameAsync(subs.Select(u => u.Username).ToList());
 
-                        foreach (var res in twitterUsers)
+
+
+                        if (twitterUsers.IsOut)
                         {
-                            if (res.IsOut)
-                            {
-                                isTimeOut = true;
-                                break;
-                            }
+                            isTimeOut = true;
+                            break;
+                        }
 
-                            foreach (var sub in subs)
-                            {
-                                var twitterUser = res.TwitterUsers.FirstOrDefault(u => u.Username == sub.Username);
+                        foreach (var sub in subs)
+                        {
+                            var twitterUser = twitterUsers.TwitterUsers.FirstOrDefault(u => u.Username == sub.Username);
 
-                                if (twitterUser == null)
+                            if (twitterUser == null)
+                            {
+                                await subscriptionService.RemoveSubscriptionAsync(sub.Username);
+
+                                var users = await userService.GetUsersWithSubscriptionAsync(sub.Username);
+
+                                if (users.Any())
                                 {
-                                    await subscriptionService.RemoveSubscriptionAsync(sub.Username);
-
-                                    var users = await userService.GetUsersWithSubscriptionAsync(sub.Username);
-
-                                    if (users.Any())
+                                    foreach (var user in users)
                                     {
-                                        foreach (var user in users)
-                                        {
-                                            await userService.RemoveSubscriptionAsync(user.Id, sub.Username);
-                                            await notifyService.SubscriptionRemovedAsync(user.Id, sub.Username);
-                                        }
+                                        await userService.RemoveSubscriptionAsync(user.Id, sub.Username);
+                                        await notifyService.SubscriptionRemovedAsync(user.Id, sub.Username);
                                     }
-
-                                    continue;
                                 }
+
+                                continue;
                             }
                         }
                     }
@@ -113,7 +112,7 @@ namespace Twitter_Telegram.Infrastructure.Services
 
                             var updatedSubs = await subService.CheckSubscriptions(subs, twitterUsers, stoppingToken);
 
-                            if(updatedSubs == null)
+                            if (updatedSubs == null)
                             {
                                 _logger.LogWarning($"{DateTime.Now.ToShortTimeString()}: TimeOut!");
                                 isTimeOut = true;
@@ -177,8 +176,8 @@ namespace Twitter_Telegram.Infrastructure.Services
                                     if (sub.IsChecked)
                                     {
                                         var subToRemove = subs.FirstOrDefault(s => s.Username == sub.Subscription.Username);
-                                        
-                                        if(subToRemove != null)
+
+                                        if (subToRemove != null)
                                         {
                                             subs.Remove(subToRemove);
                                             await subscriptionService.ChangeSubscriptionLastTimeCheckAsync(sub.Subscription.Username);
@@ -203,7 +202,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                                 await Task.Delay(TimeSpan.FromMinutes(30), stoppingToken);
                             }
                         }
-                            
+
 
                         //await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                     }
