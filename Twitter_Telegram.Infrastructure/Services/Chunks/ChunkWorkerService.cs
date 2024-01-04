@@ -19,12 +19,11 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
             _apiReader = apiReader;
         }
 
-        public async Task<List<CheckSubscriptionResultViewModel>?> CheckV2(List<Subscription> subs, List<GetUsersInfoResultViewModel> users)
+        public async Task<List<CheckSubscriptionResultViewModel>?> CheckV2(List<Subscription> subs, GetUsersInfoResultViewModel subInfos)
         {
             var resultList = new List<CheckSubscriptionResultViewModel>();
 
-            foreach (var subInfos in users)
-            {
+            
                 //if (!subInfos.IsOut)
                 //{
                 //    return null;
@@ -151,7 +150,7 @@ namespace Twitter_Telegram.Infrastructure.Services.Chunks
                     resultList.Add(updated);
                 }
 
-            }
+            
 
             return resultList;
         }

@@ -6,8 +6,8 @@ namespace Twitter_Telegram.App.Services
     {
         Task<GetUserFriendIdsResultViewModel> GetUserFriendIdsByUsernameAsync(string username, int count);
 
-        Task<List<GetUsersInfoResultViewModel>> GetUserInfoByUserIdAsync(List<string> userId);
+        Task<GetUsersInfoResultViewModel> GetUserInfoByUserIdAsync(List<string> userId);
 
-        Task<List<GetUsersInfoResultViewModel>> GetUserInfoByUsernameAsync(List<string> username);
+        Task<GetUsersInfoResultViewModel> GetUserInfoByUsernameAsync(List<string> username);
     }
 }

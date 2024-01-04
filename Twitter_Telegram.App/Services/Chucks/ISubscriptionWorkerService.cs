@@ -5,6 +5,6 @@ namespace Twitter_Telegram.App.Services.Chucks
 {
     public interface ISubscriptionWorkerService
     {
-        Task<List<CheckSubscriptionResultViewModel>?> CheckSubscriptions(List<Subscription> subs, List<GetUsersInfoResultViewModel> users, CancellationToken cancellationToken);
+        Task<List<CheckSubscriptionResultViewModel>?> CheckSubscriptions(List<Subscription> subs, GetUsersInfoResultViewModel users, CancellationToken cancellationToken);
     }
 }

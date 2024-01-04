@@ -121,7 +121,7 @@ namespace Twitter_Telegram.Infrastructure.Services
             };
         }
 
-        public async Task<List<GetUsersInfoResultViewModel>> GetUserInfoByUserIdAsync(List<string> userId)
+        public async Task<GetUsersInfoResultViewModel> GetUserInfoByUserIdAsync(List<string> userId)
         {
             var queries = PrepareUrl(userId);
             var result = new List<GetUsersInfoResultViewModel>();
@@ -133,13 +133,13 @@ namespace Twitter_Telegram.Infrastructure.Services
                 result.Add(res);
             }
 
-            return result;
+            return ConvertResult(result);
 
             //var url = string.Format(TwitterHelper.UserInfoByIdUrlV2, query);
             //return await GetUsersByUrlAsync(url);
         }
 
-        public async Task<List<GetUsersInfoResultViewModel>> GetUserInfoByUsernameAsync(List<string> username)
+        public async Task<GetUsersInfoResultViewModel> GetUserInfoByUsernameAsync(List<string> username)
         {
             var queries = PrepareUrl(username);
             var result = new List<GetUsersInfoResultViewModel>();
@@ -151,12 +151,30 @@ namespace Twitter_Telegram.Infrastructure.Services
                 result.Add(res);
             }
 
-            return result;
+            return ConvertResult(result);
             //var sb = new StringBuilder();
             //username.ForEach(s => sb.Append(s + "%2C"));
             //var url = string.Format(TwitterHelper.UserInfoByUsernameUrlV2, sb.ToString());
             //return await GetUsersByUrlAsync(url);
 
+        }
+
+        private GetUsersInfoResultViewModel ConvertResult(List<GetUsersInfoResultViewModel> list)
+        {
+            var res = new GetUsersInfoResultViewModel();
+            res.IsOut = list.All(x => x.IsOut);
+            res.IsFound = list.Any(x => x.IsFound);
+            res.TwitterUsers = new List<TwitterUser>();
+
+            foreach (var item in list)
+            {
+                if(item.TwitterUsers != null)
+                {
+                    res.TwitterUsers.AddRange(item.TwitterUsers);
+                }
+            }
+
+            return res;
         }
 
         private async Task<GetUsersInfoResultViewModel> GetUsersByUrlAsync(string url)
@@ -242,7 +260,7 @@ namespace Twitter_Telegram.Infrastructure.Services
                         RequestUri = new Uri(url),
                         Headers =
                             {
-                                { "X-RapidAPI-Key", "Key" },
+                                { "X-RapidAPI-Key", "d83f2758cbmshac7e84fb6910d7fp187552jsnbed33f346069" },
                                 { "X-RapidAPI-Host", "twitter135.p.rapidapi.com" },
                             },
                     };

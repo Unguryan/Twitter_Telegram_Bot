@@ -5,8 +5,6 @@ using Twitter_Telegram.App.Services;
 using Twitter_Telegram.App.Services.Telegram;
 using Twitter_Telegram.Domain.Models;
 using System.Text;
-using System.Collections.Generic;
-using System.Drawing;
 
 namespace Twitter_Telegram.Infrastructure.Services
 {
@@ -33,16 +31,13 @@ namespace Twitter_Telegram.Infrastructure.Services
             {
                 var result = await _apiReader.GetUserInfoByUserIdAsync(updatedFriends.Select(u => u.ToString()).ToList());
 
-                foreach (var res in result)
+                if (result.IsOut)
                 {
-                    if (res.IsOut)
-                    {
-                        await Task.Delay(TimeSpan.FromMinutes(15));
-                        continue;
-                    }
-
-                    friends.AddRange(res.TwitterUsers);
+                    await Task.Delay(TimeSpan.FromMinutes(15));
+                    continue;
                 }
+
+                friends.AddRange(result.TwitterUsers);
 
                 break;
             }
